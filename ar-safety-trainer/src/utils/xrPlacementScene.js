@@ -46,12 +46,23 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
   let session
   try {
     session = await navigator.xr.requestSession('immersive-ar', {
-      requiredFeatures: ['hit-test'],
+      // `anchors` is required, not optional, on purpose: a hit-test
+      // position alone is just a one-time snapshot that visibly drifts
+      // as the device's own tracking keeps refining itself after
+      // placement — real-device testing confirmed exactly this ("bhaag
+      // ja raha hai"). Anchors are what the platform re-resolves every
+      // frame to correct for that, which is the actual fix below. A
+      // device that can't grant `anchors` simply never gets this tier —
+      // requestSession rejects, caught below, and startPlacementScene
+      // already falls through to the passthrough tier, which cannot
+      // drift at all since it does no real-world tracking. Guaranteed-
+      // stable beats "real but sometimes wanders off".
+      requiredFeatures: ['hit-test', 'anchors'],
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: domOverlayRoot },
     })
   } catch {
-    return null // e.g. permission denied, or device lied about isSessionSupported
+    return null // e.g. permission denied, or anchors genuinely unsupported here
   }
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
@@ -73,31 +84,79 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
   scene.add(reticle)
 
   let placed = false
+  let anchor = null
+  let lastHitTransform = null // the most recent hit-test XRRigidTransform, captured for use at the moment of a tap
   let resolvePlacement
   const placementPromise = new Promise((res) => { resolvePlacement = res })
 
-  const onSelect = () => {
-    if (placed || !reticle.visible) return
-    anchorGroup.position.setFromMatrixPosition(reticle.matrix)
-    anchorGroup.quaternion.setFromRotationMatrix(reticle.matrix)
-    placed = true
+  // XRInputSourceEvent carries its own `.frame`, valid for exactly this
+  // event — that's what createAnchor() needs (anchor creation must
+  // happen against a specific frame's data).
+  const onSelect = (event) => {
+    if (placed || !reticle.visible || !lastHitTransform) return
+    placed = true // set immediately: a second tap while createAnchor() is still pending must not race
     reticle.visible = false
-    resolvePlacement()
+    const frame = event.frame
+    const fallbackToSnapshot = () => {
+      // Anchor creation failed despite the feature being granted —
+      // fall back to a one-shot snapshot rather than leave the user
+      // stuck with nothing placed; not the common path.
+      anchorGroup.position.setFromMatrixPosition(reticle.matrix)
+      anchorGroup.quaternion.setFromRotationMatrix(reticle.matrix)
+      resolvePlacement()
+    }
+    if (frame?.createAnchor) {
+      frame.createAnchor(lastHitTransform, referenceSpace).then((a) => {
+        anchor = a
+        resolvePlacement()
+      }, fallbackToSnapshot)
+    } else {
+      fallbackToSnapshot()
+    }
   }
   session.addEventListener('select', onSelect)
+
+  // Deletes the current anchor and reopens placement — the mannequin/
+  // coal/miner are parented under `anchorGroup` and never re-added, so
+  // the next tap just re-anchors everything already in the scene. This
+  // is the user-facing escape hatch if a placement ever still looks
+  // off: one tap fixes it instead of leaving/re-entering the screen.
+  function recenter() {
+    if (anchor?.delete) { try { anchor.delete() } catch { /* non-critical */ } }
+    anchor = null
+    placed = false
+    lastHitTransform = null
+    reticle.visible = false
+  }
 
   let stopped = false
   renderer.setAnimationLoop((_time, frame) => {
     if (stopped) return
-    if (frame && !placed) {
-      const pose = frame.getViewerPose(referenceSpace)
-      if (pose) {
-        const hits = frame.getHitTestResults(hitTestSource)
-        if (hits.length > 0) {
-          reticle.visible = true
-          reticle.matrix.fromArray(hits[0].getPose(referenceSpace).transform.matrix)
-        } else {
-          reticle.visible = false
+    if (frame) {
+      if (!placed) {
+        const pose = frame.getViewerPose(referenceSpace)
+        if (pose) {
+          const hits = frame.getHitTestResults(hitTestSource)
+          if (hits.length > 0) {
+            const hitPose = hits[0].getPose(referenceSpace)
+            lastHitTransform = hitPose.transform
+            reticle.visible = true
+            reticle.matrix.fromArray(hitPose.transform.matrix)
+          } else {
+            reticle.visible = false
+          }
+        }
+      } else if (anchor) {
+        // The actual fix: re-resolve the anchor's pose every frame
+        // instead of trusting a frozen snapshot, so anchorGroup tracks
+        // the platform's own drift corrections. If a pose is briefly
+        // unavailable (momentary tracking loss), skip this frame's
+        // update and stay at the last good transform rather than
+        // snapping anywhere.
+        const anchorPose = frame.getPose(anchor.anchorSpace, referenceSpace)
+        if (anchorPose) {
+          anchorGroup.matrix.fromArray(anchorPose.transform.matrix)
+          anchorGroup.matrix.decompose(anchorGroup.position, anchorGroup.quaternion, anchorGroup.scale)
         }
       }
     }
@@ -109,10 +168,13 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
     backend: 'webxr',
     requestPlacement: () => placementPromise,
     project: (worldPos) => projectToScreen(worldPos, camera, canvas),
+    recenter,
     stop() {
       stopped = true
       renderer.setAnimationLoop(null)
       session.removeEventListener('select', onSelect)
+      if (anchor?.delete) { try { anchor.delete() } catch { /* non-critical */ } }
+      try { hitTestSource.cancel() } catch { /* non-critical */ }
       session.end().catch(() => {})
     },
   }
@@ -161,6 +223,11 @@ async function startPassthroughBackend({ scene, canvas, video, frameCallbacks })
     // there's no reticle/tap step for this tier.
     requestPlacement: () => Promise.resolve(),
     project: (worldPos) => projectToScreen(worldPos, camera, canvas),
+    // Nothing to recenter here — anchorGroup is a fixed offset from the
+    // camera, not real-world tracked, so there's nothing that can drift
+    // in the first place. Present for API symmetry with the WebXR
+    // backend so callers can invoke it unconditionally.
+    recenter() {},
     stop() {
       stopped = true
       if (rafId) cancelAnimationFrame(rafId)

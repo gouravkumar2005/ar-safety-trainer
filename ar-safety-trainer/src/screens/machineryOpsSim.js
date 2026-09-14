@@ -44,6 +44,7 @@ export function renderMachineryOpsSim(main, navigate) {
       <div id="sim-overlay" style="position:absolute;inset:0;pointer-events:none;">
         <button class="btn btn-ghost" id="sim-back" style="position:absolute;top:10px;left:10px;pointer-events:auto;">&larr; ${t('backToModules')}</button>
         <span class="badge badge-active" id="sim-backend-badge" style="position:absolute;top:10px;right:10px;"></span>
+        <button class="btn" id="sim-recenter" hidden style="position:absolute;top:46px;right:10px;pointer-events:auto;">${t('arSimRecenterBtn')}</button>
         <div id="sim-marker" class="hotspot-btn" style="position:fixed;display:none;pointer-events:none;transform:translate(-50%,-50%);"></div>
         <p class="hint" id="sim-hint" style="position:absolute;left:0;right:0;bottom:96px;text-align:center;color:#fff;text-shadow:0 1px 3px #000;margin:0;padding:0 12px;"></p>
         <div id="sim-caption" class="sheet" style="position:absolute;left:8px;right:8px;bottom:8px;display:none;pointer-events:auto;"></div>
@@ -60,6 +61,7 @@ export function renderMachineryOpsSim(main, navigate) {
   const overlay = main.querySelector('#sim-overlay')
   const backBtn = main.querySelector('#sim-back')
   const backendBadge = main.querySelector('#sim-backend-badge')
+  const recenterBtn = main.querySelector('#sim-recenter')
   const marker = main.querySelector('#sim-marker')
   const hintEl = main.querySelector('#sim-hint')
   const captionEl = main.querySelector('#sim-caption')
@@ -99,6 +101,11 @@ export function renderMachineryOpsSim(main, navigate) {
   let coalPile = null
   let minerObj = null
   const loader = new GLTFLoader()
+  // Kicked off once the scene starts (see below) instead of fetching +
+  // parsing each .glb lazily at the exact moment of its drop — removes
+  // a hitch right at the most interaction-heavy instant.
+  let minerPreload = null
+  let beltPreload = null
 
   function targetWorldPos(_scene, offset) {
     return anchorGroup.localToWorld(new THREE.Vector3(offset.x, offset.y, offset.z))
@@ -115,7 +122,17 @@ export function renderMachineryOpsSim(main, navigate) {
     }
     if (scene.backend === 'passthrough') video.style.display = 'block'
     backendBadge.textContent = scene.backend === 'webxr' ? t('arSimBackendWebxr') : t('arSimBackendPassthrough')
-    if (scene.backend === 'webxr') hintEl.textContent = t('arSimTapToPlaceHint')
+    if (scene.backend === 'webxr') {
+      hintEl.textContent = t('arSimTapToPlaceHint')
+      recenterBtn.hidden = false
+      recenterBtn.addEventListener('click', () => {
+        scene.recenter()
+        hintEl.textContent = t('arSimTapToPlaceHint')
+      })
+    }
+
+    minerPreload = loader.loadAsync(mod.model).catch(() => null)
+    beltPreload = loader.loadAsync(beltItem.model).catch(() => null)
 
     scene.requestPlacement().then(() => {
       if (leftScreen) return
@@ -211,13 +228,15 @@ export function renderMachineryOpsSim(main, navigate) {
     trayEl.innerHTML = ''
     hintEl.textContent = ''
 
-    loader.loadAsync(mod.model).then((gltf) => {
-      if (leftScreen || !anchorGroup) return
+    ;(minerPreload ?? loader.loadAsync(mod.model).catch(() => null)).then((gltf) => {
+      if (leftScreen || !anchorGroup || !gltf) return
       minerObj = gltf.scene
       minerObj.scale.set(DIORAMA_MINER_SCALE, DIORAMA_MINER_SCALE, DIORAMA_MINER_SCALE)
       minerObj.position.set(COAL_FACE_OFFSET.x, COAL_FACE_OFFSET.y, COAL_FACE_OFFSET.z + 0.25)
       anchorGroup.add(minerObj)
-    }).catch(() => { /* non-critical — narration below still proceeds */ })
+    })
+    // Non-critical either way — narration below still proceeds even if
+    // the visual attach failed.
 
     burstConfetti(main)
     navigator.vibrate?.(20)
@@ -264,13 +283,13 @@ export function renderMachineryOpsSim(main, navigate) {
     hintEl.textContent = ''
     phase = 'transporting'
 
-    loader.loadAsync(beltItem.model).then((gltf) => {
-      if (leftScreen || !anchorGroup) return
+    ;(beltPreload ?? loader.loadAsync(beltItem.model).catch(() => null)).then((gltf) => {
+      if (leftScreen || !anchorGroup || !gltf) return
       const belt = gltf.scene
       belt.scale.set(DIORAMA_BELT_SCALE, DIORAMA_BELT_SCALE, DIORAMA_BELT_SCALE)
       belt.position.set(DROP_OFF_OFFSET.x, 0, DROP_OFF_OFFSET.z)
       anchorGroup.add(belt)
-    }).catch(() => { /* non-critical */ })
+    })
 
     captionEl.style.display = 'block'
     captionEl.innerHTML = `<h4>${t('machSimTransportingLabel')} ${pick(beltItem.title)}</h4><p>${pick(beltItem.info)}</p>`

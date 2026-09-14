@@ -40,6 +40,7 @@ export function renderPpeEquipSim(main, navigate) {
       <div id="sim-overlay" style="position:absolute;inset:0;pointer-events:none;">
         <button class="btn btn-ghost" id="sim-back" style="position:absolute;top:10px;left:10px;pointer-events:auto;">&larr; ${t('backToModules')}</button>
         <span class="badge badge-active" id="sim-backend-badge" style="position:absolute;top:10px;right:10px;"></span>
+        <button class="btn" id="sim-recenter" hidden style="position:absolute;top:46px;right:10px;pointer-events:auto;">${t('arSimRecenterBtn')}</button>
         <div id="sim-marker" class="hotspot-btn" style="position:fixed;display:none;pointer-events:none;transform:translate(-50%,-50%);"></div>
         <p class="hint" id="sim-hint" style="position:absolute;left:0;right:0;bottom:96px;text-align:center;color:#fff;text-shadow:0 1px 3px #000;margin:0;padding:0 12px;"></p>
         <div id="sim-caption" class="sheet" style="position:absolute;left:8px;right:8px;bottom:8px;display:none;pointer-events:auto;"></div>
@@ -56,6 +57,7 @@ export function renderPpeEquipSim(main, navigate) {
   const overlay = main.querySelector('#sim-overlay')
   const backBtn = main.querySelector('#sim-back')
   const backendBadge = main.querySelector('#sim-backend-badge')
+  const recenterBtn = main.querySelector('#sim-recenter')
   const marker = main.querySelector('#sim-marker')
   const hintEl = main.querySelector('#sim-hint')
   const captionEl = main.querySelector('#sim-caption')
@@ -95,6 +97,7 @@ export function renderPpeEquipSim(main, navigate) {
   let currentIndex = 0
   let mannequinGroup = null
   const loader = new GLTFLoader()
+  const modelPreloads = new Map() // item id -> Promise<gltf|null>, kicked off once the scene is ready
 
   const scenePromise = startPlacementScene({ canvas, video, domOverlayRoot: overlay }).then((scene) => {
     if (leftScreen) {
@@ -110,7 +113,27 @@ export function renderPpeEquipSim(main, navigate) {
     if (scene.backend === 'passthrough') video.style.display = 'block'
     backendBadge.textContent = scene.backend === 'webxr' ? t('arSimBackendWebxr') : t('arSimBackendPassthrough')
 
-    if (scene.backend === 'webxr') hintEl.textContent = t('arSimTapToPlaceHint')
+    if (scene.backend === 'webxr') {
+      hintEl.textContent = t('arSimTapToPlaceHint')
+      // Only meaningful on the WebXR tier — the passthrough tier has
+      // nothing that can drift, so nothing to recenter (recenter() is
+      // still a safe no-op there if this were ever shown by mistake).
+      recenterBtn.hidden = false
+      recenterBtn.addEventListener('click', () => {
+        scene.recenter()
+        hintEl.textContent = t('arSimTapToPlaceHint')
+      })
+    }
+
+    // Kick off loading every item .glb in parallel as soon as the scene
+    // exists, rather than fetching+parsing one lazily at the exact
+    // moment of each drop — removes a network/parse hitch right at the
+    // most interaction-heavy instant. Cached by item id; equipItem()
+    // below awaits the cached promise instead of starting a fresh load.
+    ppeItems.forEach((item) => {
+      modelPreloads.set(item.id, loader.loadAsync(item.model).catch(() => null))
+    })
+
     scene.requestPlacement().then(() => {
       if (leftScreen) return
       mannequinGroup = buildMannequin()
@@ -210,19 +233,23 @@ export function renderPpeEquipSim(main, navigate) {
     clearTimeout(advanceTimer)
     scenePromise.then((scene) => {
       if (!scene || !mannequinGroup) return
-      loader.loadAsync(item.model).then((gltf) => {
-        if (leftScreen) return
+      // Prefer the preload kicked off when the scene started (almost
+      // always already resolved by the time the user has dragged this
+      // far) — falls back to a fresh load only if preloading hasn't
+      // finished yet or was somehow skipped.
+      const preload = modelPreloads.get(item.id) ?? loader.loadAsync(item.model).catch(() => null)
+      preload.then((gltf) => {
+        if (leftScreen || !gltf) return
         const obj = gltf.scene
         const s = item.scale ?? 1
         obj.scale.set(s, s, s)
         const anchor = mannequinGroup.userData.anchors[item.id]
         if (anchor) obj.position.copy(anchor)
         mannequinGroup.add(obj)
-      }).catch(() => {
-        // Non-critical — the marker/narration below still confirms the
-        // item as "equipped" for training purposes even if the visual
-        // attach failed (e.g. a slow/dropped network fetch of the .glb).
       })
+      // Non-critical either way — the marker/narration above already
+      // confirms the item as "equipped" for training purposes even if
+      // the visual attach failed (e.g. a dropped network fetch).
     })
 
     hintEl.textContent = ''
