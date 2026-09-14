@@ -83,6 +83,12 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
   try {
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    // See the matching comment in startPassthroughBackend — same
+    // opaque-black-clear issue applies here too. The XR compositor
+    // normally owns the real camera passthrough directly, but this
+    // keeps our own canvas honestly transparent regardless (e.g. during
+    // any moment rendering happens outside an active XR frame).
+    renderer.setClearColor(0x000000, 0)
     renderer.xr.enabled = true
     await renderer.xr.setSession(session)
 
@@ -233,6 +239,16 @@ async function startPassthroughBackend({ scene, canvas, video, frameCallbacks })
   try {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    // The actual "screen is fully black" bug: `alpha: true` above only
+    // makes the canvas's WebGL context *capable* of transparency — it
+    // does NOT change the renderer's own clear color, which defaults to
+    // opaque black (alpha 1). Every render() call was clearing to solid
+    // black first, then drawing a sparse scene on top — the canvas
+    // stayed almost entirely opaque black, completely hiding the
+    // <video> element positioned behind it. This is what actually needs
+    // setting to make the canvas genuinely transparent where nothing is
+    // drawn, letting the camera feed show through.
+    renderer.setClearColor(0x000000, 0)
     const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 50)
     camera.position.set(0, 1.4, 1.9)
     camera.lookAt(0, 1.0, 0)
