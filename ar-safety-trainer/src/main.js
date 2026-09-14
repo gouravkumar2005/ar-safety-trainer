@@ -2,7 +2,7 @@ import '@google/model-viewer'
 import './style.css'
 import { t, toggleLang, getLang } from './utils/i18n.js'
 import { getResult } from './utils/state.js'
-import { PPE_GATE_MODULE_ID } from './data/modules.js'
+import { PPE_GATE_MODULE_ID, EMERGENCY_RESPONSE_MODULE_ID } from './data/modules.js'
 import { renderHome } from './screens/home.js'
 import { renderArViewer } from './screens/arViewer.js'
 import { renderQuiz } from './screens/quiz.js'
@@ -14,6 +14,9 @@ import { renderGrievance } from './screens/grievance.js'
 import { renderItemGallery } from './screens/itemGallery.js'
 import { renderItemViewer } from './screens/itemViewer.js'
 import { renderTour } from './screens/tour.js'
+import { renderEmergencyHub } from './screens/emergencyHub.js'
+import { renderEmergencyGuide } from './screens/emergencyGuide.js'
+import { renderCprCameraAssist } from './screens/cprCameraAssist.js'
 import { isMuted, toggleMuted } from './utils/sound.js'
 
 const app = document.querySelector('#app')
@@ -90,6 +93,9 @@ app.querySelector('#sound-btn').addEventListener('click', () => {
 // #/module/:id/certificate          -> QR certificate generation
 // #/module/:id/gallery              -> per-item gallery list (if mod.hasItemGallery)
 // #/module/:id/gallery/:itemId      -> one gallery item's dedicated viewer
+// #/module/emergency-response       -> voice/manual first-aid hub (no .glb, see below)
+// #/module/emergency-response/guide/:guideId  -> narrated first-aid steps
+// #/module/emergency-response/camera/cpr      -> real hand-motion CPR rate assist
 // #/verify                          -> paste/check a certificate's ledger signature
 // #/admin                           -> compliance dashboard (export/import a device's data)
 //
@@ -147,7 +153,20 @@ function route() {
         renderCertificate(main, navigate, params)
         break
       case 'ar':
-        renderArViewer(main, navigate, params)
+        // emergency-response has no .glb — see EMERGENCY_RESPONSE_MODULE_ID's
+        // comment in data/modules.js. Its "default" screen is the hub, not
+        // an AR viewer.
+        if (params.id === EMERGENCY_RESPONSE_MODULE_ID) {
+          renderEmergencyHub(main, navigate)
+        } else {
+          renderArViewer(main, navigate, params)
+        }
+        break
+      case 'guide':
+        renderEmergencyGuide(main, navigate, params)
+        break
+      case 'camera':
+        renderCprCameraAssist(main, navigate)
         break
       case 'gallery':
         params.itemId ? renderItemViewer(main, navigate, params) : renderItemGallery(main, navigate, params)

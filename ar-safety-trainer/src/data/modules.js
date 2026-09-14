@@ -321,11 +321,28 @@ export const modules = [
   {
     id: 'emergency-response',
     domain: 'emergency-response',
-    status: 'locked',
+    status: 'active',
     title: { en: 'Emergency Response Procedures', hi: 'आपातकालीन प्रतिक्रिया प्रक्रिया' },
-    summary: { en: 'Waiting for a 3D model.', hi: '3D मॉडल की प्रतीक्षा है।' },
+    summary: {
+      en: 'Say what happened, or pick from the list — get voice-guided first-aid steps.',
+      hi: 'क्या हुआ बताएं, या सूची से चुनें — वॉइस-निर्देशित प्राथमिक चिकित्सा चरण पाएं।',
+    },
+    // Deliberately no .glb — this module's core mechanic is voice triage
+    // plus honest live-camera assist (real hand-motion CPR rate,
+    // position-only overlays), not a static 3D scene. main.js's router
+    // special-cases this id to go straight to emergencyHub.js instead of
+    // arViewer.js. See src/data/emergencyGuides.js for the actual content
+    // and src/screens/emergencyHub.js / emergencyGuide.js for the flow.
     model: null,
-    nsqf: null,
+    // No quiz/gate/certificate for this module (by design) — it's a
+    // reference/assist tool for a live emergency, not a graded module.
+    nsqf: {
+      level: 3,
+      competency: {
+        en: 'Basic first-aid response and emergency procedure awareness',
+        hi: 'बुनियादी प्राथमिक चिकित्सा प्रतिक्रिया और आपातकालीन प्रक्रिया जागरूकता',
+      },
+    },
   },
 ]
 
@@ -336,3 +353,9 @@ export const getModule = (id) => modules.find((m) => m.id === id)
 // unlocked/revisitable on the home screen regardless of gate state (see
 // home.js, which doesn't consult this at all — only main.js's router does).
 export const PPE_GATE_MODULE_ID = 'ppe-compliance'
+
+// Unlike every other module, this one has no .glb and no quiz/gate — its
+// screens (emergencyHub.js / emergencyGuide.js / cprCameraAssist.js) are
+// voice/camera-driven, not a <model-viewer> scene. main.js's router
+// special-cases this id to skip arViewer.js entirely.
+export const EMERGENCY_RESPONSE_MODULE_ID = 'emergency-response'

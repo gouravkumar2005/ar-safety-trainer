@@ -70,13 +70,32 @@ install. So the plan is two phases:
     **Conveyor Belt** (`src/data/machineryItems.js`) — general equipment
     hazards (tip-over/blind-spot risk; belt nip points/entanglement)
     alongside the continuous miner, same pattern as PPE's gallery.
-  - Fire & Explosion, Gas Leak, Chemical Hazard, and Emergency Response are
-    **intentionally locked** — no real models for these yet. (Fire &
-    Explosion briefly had a placeholder wired to what turned out to be the
-    continuous-miner model; reverted rather than leave a mislabeled demo.)
-    Drop a `.glb` into `public/models/`, flip `status` to `'active'`, fill
-    in hotspots/quiz in `src/data/modules.js` — nothing else needs to
-    change to unlock one.
+  - Fire & Explosion, Gas Leak, and Chemical Hazard are **intentionally
+    locked** — no real models for these yet. (Fire & Explosion briefly had
+    a placeholder wired to what turned out to be the continuous-miner
+    model; reverted rather than leave a mislabeled demo.) Drop a `.glb`
+    into `public/models/`, flip `status` to `'active'`, fill in
+    hotspots/quiz in `src/data/modules.js` — nothing else needs to change
+    to unlock one.
+  - **Emergency Response** is active but deliberately has **no 3D model**
+    — its core mechanic is voice triage plus honest live-camera assist,
+    not a static scene. Say what happened ("mujhe cut lag gaya" / "my leg
+    is broken") and it opens the matching first-aid guide
+    (`src/data/emergencyGuides.js`, Indian Red Cross Society protocol:
+    Bleeding, Fracture, Burn, Choking, CPR), narrated step-by-step in
+    Hindi/English exactly like the guided tours above; a manual grid of
+    all 5 is always available too, in case voice isn't usable. **The
+    camera never diagnoses an injury** — it only helps with *where*, once
+    the person has already said or picked *what*: the CPR guide's
+    compression step can open a real hand-motion-tracked rate check
+    (`src/utils/handTracker.js`, MediaPipe HandLandmarker running
+    on-device — genuine detected compressions/min, never a canned
+    number, and a relative-only depth bar, never a fake cm figure), and
+    the Bleeding/Fracture guides can optionally overlay a "press/support
+    here" marker on the limb already named
+    (`src/utils/poseTracker.js`, positioning only). Every camera/mic path
+    degrades to the text-only guide cleanly if permission is denied or
+    unsupported — never a broken screen, never a fake result.
 - **AR viewer** (`src/screens/arViewer.js`) — loads the model, lets the
   worker rotate/zoom it or place it in real space via AR, and tap hotspots
   to read about each hazard.
@@ -161,6 +180,11 @@ install. So the plan is two phases:
   it says so rather than reading the text in the wrong language's
   accent/pronunciation — a clear gap is safer than misleading audio for a
   low-literacy listener.
+- **Voice input** (`src/utils/voiceCommand.js`) — the counterpart to the
+  above: the Web Speech API's `SpeechRecognition`, used only by the
+  Emergency Response hub's mic button. Same honest-failure shape as
+  `speech.js` — unsupported/denied/no-match all resolve to `null`, never a
+  guessed transcript; the caller falls back to a manual list.
 - **Language registry** (`LANGUAGES` in `src/utils/i18n.js`) — English and
   Hindi are real; Santali, Mundari, Ho, and Kurukh are now data-level
   entries marked `locked` (same honesty rule as before: naming a language

@@ -22,7 +22,7 @@ export function toggleMuted() {
   return muted
 }
 
-function tone(freq, duration, type = 'sine', gainPeak = 0.15, delay = 0) {
+export function tone(freq, duration, type = 'sine', gainPeak = 0.15, delay = 0) {
   if (muted || typeof window === 'undefined' || !(window.AudioContext || window.webkitAudioContext)) return
   try {
     const ctx = getCtx()
