@@ -99,7 +99,7 @@ export function renderPpeEquipSim(main, navigate) {
   const loader = new GLTFLoader()
   const modelPreloads = new Map() // item id -> Promise<gltf|null>, kicked off once the scene is ready
 
-  const scenePromise = startPlacementScene({ canvas, video, domOverlayRoot: overlay }).then((scene) => {
+  const scenePromise = startPlacementScene({ canvas, video, domOverlayRoot: overlay }).catch(() => null).then((scene) => {
     if (leftScreen) {
       scene?.stop()
       return null

@@ -65,16 +65,42 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
     return null // e.g. permission denied, or anchors genuinely unsupported here
   }
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-  renderer.xr.enabled = true
-  await renderer.xr.setSession(session)
+  // Everything from here on (creating the renderer on the shared
+  // canvas, handing the session to it, requesting reference
+  // spaces/hit-test) is a real, fallible negotiation with the device —
+  // any one of these can legitimately throw on a real phone even after
+  // `requestSession` itself succeeded (this got more likely once
+  // `anchors` became a required feature above). Previously none of
+  // this was guarded, so a failure here threw all the way out of
+  // startPlacementScene() uncaught, which left the screen fully black
+  // with nothing ever falling back to the passthrough tier — the bug
+  // reported from real-device testing. Wrap the whole thing and, on any
+  // failure, properly release whatever was half-built (the WebGL
+  // context claimed on the canvas, the open XR session) before
+  // returning null, so startPlacementScene() can cleanly try the
+  // passthrough tier on a genuinely fresh canvas.
+  let renderer = null
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    renderer.xr.enabled = true
+    await renderer.xr.setSession(session)
 
-  const camera = new THREE.PerspectiveCamera()
-  const referenceSpace = await session.requestReferenceSpace('local')
-  const viewerSpace = await session.requestReferenceSpace('viewer')
-  const hitTestSource = await session.requestHitTestSource({ space: viewerSpace })
+    const camera = new THREE.PerspectiveCamera()
+    const referenceSpace = await session.requestReferenceSpace('local')
+    const viewerSpace = await session.requestReferenceSpace('viewer')
+    const hitTestSource = await session.requestHitTestSource({ space: viewerSpace })
 
+    return startWebxrLoop({ scene, anchorGroup, canvas, renderer, session, camera, referenceSpace, hitTestSource, frameCallbacks })
+  } catch {
+    try { renderer?.dispose() } catch { /* non-critical */ }
+    try { renderer?.forceContextLoss() } catch { /* non-critical */ }
+    try { await session.end() } catch { /* non-critical — session may already be ending/ended */ }
+    return null
+  }
+}
+
+function startWebxrLoop({ scene, anchorGroup, canvas, renderer, session, camera, referenceSpace, hitTestSource, frameCallbacks }) {
   const reticle = new THREE.Mesh(
     new THREE.RingGeometry(0.06, 0.08, 24).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0xffb020 })
@@ -132,33 +158,42 @@ async function startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, f
   let stopped = false
   renderer.setAnimationLoop((_time, frame) => {
     if (stopped) return
-    if (frame) {
-      if (!placed) {
-        const pose = frame.getViewerPose(referenceSpace)
-        if (pose) {
-          const hits = frame.getHitTestResults(hitTestSource)
-          if (hits.length > 0) {
-            const hitPose = hits[0].getPose(referenceSpace)
-            lastHitTransform = hitPose.transform
-            reticle.visible = true
-            reticle.matrix.fromArray(hitPose.transform.matrix)
-          } else {
-            reticle.visible = false
+    // A transient per-frame API hiccup (frame.getPose/createAnchor
+    // throwing on some edge-case tracking state) should skip this one
+    // frame's placement update, never break the loop or leave the
+    // canvas stuck — same reasoning as the setup-time try/catch above.
+    try {
+      if (frame) {
+        if (!placed) {
+          const pose = frame.getViewerPose(referenceSpace)
+          if (pose) {
+            const hits = frame.getHitTestResults(hitTestSource)
+            if (hits.length > 0) {
+              const hitPose = hits[0].getPose(referenceSpace)
+              lastHitTransform = hitPose.transform
+              reticle.visible = true
+              reticle.matrix.fromArray(hitPose.transform.matrix)
+            } else {
+              reticle.visible = false
+            }
+          }
+        } else if (anchor) {
+          // The actual fix: re-resolve the anchor's pose every frame
+          // instead of trusting a frozen snapshot, so anchorGroup
+          // tracks the platform's own drift corrections. If a pose is
+          // briefly unavailable (momentary tracking loss), skip this
+          // frame's update and stay at the last good transform rather
+          // than snapping anywhere.
+          const anchorPose = frame.getPose(anchor.anchorSpace, referenceSpace)
+          if (anchorPose) {
+            anchorGroup.matrix.fromArray(anchorPose.transform.matrix)
+            anchorGroup.matrix.decompose(anchorGroup.position, anchorGroup.quaternion, anchorGroup.scale)
           }
         }
-      } else if (anchor) {
-        // The actual fix: re-resolve the anchor's pose every frame
-        // instead of trusting a frozen snapshot, so anchorGroup tracks
-        // the platform's own drift corrections. If a pose is briefly
-        // unavailable (momentary tracking loss), skip this frame's
-        // update and stay at the last good transform rather than
-        // snapping anywhere.
-        const anchorPose = frame.getPose(anchor.anchorSpace, referenceSpace)
-        if (anchorPose) {
-          anchorGroup.matrix.fromArray(anchorPose.transform.matrix)
-          anchorGroup.matrix.decompose(anchorGroup.position, anchorGroup.quaternion, anchorGroup.scale)
-        }
       }
+    } catch {
+      // Skip this frame's placement update only — rendering below still
+      // proceeds so the view never goes black over a single bad frame.
     }
     renderer.render(scene, camera)
     frameCallbacks.forEach((cb) => cb())
@@ -190,50 +225,64 @@ async function startPassthroughBackend({ scene, canvas, video, frameCallbacks })
   video.srcObject = stream
   await video.play().catch(() => {})
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 50)
-  camera.position.set(0, 1.4, 1.9)
-  camera.lookAt(0, 1.0, 0)
+  // Same defense-in-depth as the WebXR backend above: renderer/camera
+  // setup is unlikely to fail here (no device negotiation involved),
+  // but "whatever it takes" means not leaving that assumption
+  // unguarded — a failure here should release the camera stream and
+  // report unavailable, never leave a half-built black screen behind.
+  try {
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 50)
+    camera.position.set(0, 1.4, 1.9)
+    camera.lookAt(0, 1.0, 0)
 
-  function resize() {
-    const w = canvas.clientWidth || window.innerWidth
-    const h = canvas.clientHeight || window.innerHeight
-    renderer.setSize(w, h, false)
-    camera.aspect = w / h
-    camera.updateProjectionMatrix()
-  }
-  resize()
-  window.addEventListener('resize', resize)
+    function resize() {
+      const w = canvas.clientWidth || window.innerWidth
+      const h = canvas.clientHeight || window.innerHeight
+      renderer.setSize(w, h, false)
+      camera.aspect = w / h
+      camera.updateProjectionMatrix()
+    }
+    resize()
+    window.addEventListener('resize', resize)
 
-  let stopped = false
-  let rafId = null
-  function loop() {
-    if (stopped) return
-    renderer.render(scene, camera)
-    frameCallbacks.forEach((cb) => cb())
+    let stopped = false
+    let rafId = null
+    function loop() {
+      if (stopped) return
+      try {
+        renderer.render(scene, camera)
+        frameCallbacks.forEach((cb) => cb())
+      } catch {
+        // Skip this frame only — never let one bad frame kill the loop.
+      }
+      rafId = requestAnimationFrame(loop)
+    }
     rafId = requestAnimationFrame(loop)
-  }
-  rafId = requestAnimationFrame(loop)
 
-  return {
-    backend: 'passthrough',
-    // No real-world tracking here — anchorGroup just sits at a fixed
-    // offset in front of the virtual camera. Resolves immediately;
-    // there's no reticle/tap step for this tier.
-    requestPlacement: () => Promise.resolve(),
-    project: (worldPos) => projectToScreen(worldPos, camera, canvas),
-    // Nothing to recenter here — anchorGroup is a fixed offset from the
-    // camera, not real-world tracked, so there's nothing that can drift
-    // in the first place. Present for API symmetry with the WebXR
-    // backend so callers can invoke it unconditionally.
-    recenter() {},
-    stop() {
-      stopped = true
-      if (rafId) cancelAnimationFrame(rafId)
-      window.removeEventListener('resize', resize)
-      stream.getTracks().forEach((t) => t.stop())
-    },
+    return {
+      backend: 'passthrough',
+      // No real-world tracking here — anchorGroup just sits at a fixed
+      // offset in front of the virtual camera. Resolves immediately;
+      // there's no reticle/tap step for this tier.
+      requestPlacement: () => Promise.resolve(),
+      project: (worldPos) => projectToScreen(worldPos, camera, canvas),
+      // Nothing to recenter here — anchorGroup is a fixed offset from
+      // the camera, not real-world tracked, so there's nothing that
+      // can drift in the first place. Present for API symmetry with
+      // the WebXR backend so callers can invoke it unconditionally.
+      recenter() {},
+      stop() {
+        stopped = true
+        if (rafId) cancelAnimationFrame(rafId)
+        window.removeEventListener('resize', resize)
+        stream.getTracks().forEach((t) => t.stop())
+      },
+    }
+  } catch {
+    stream.getTracks().forEach((t) => t.stop())
+    return null
   }
 }
 
@@ -250,9 +299,18 @@ export async function startPlacementScene({ canvas, video, domOverlayRoot }) {
   const frameCallbacks = []
   const onFrame = (cb) => frameCallbacks.push(cb)
 
+  // Both backend starters already guard their own fallible steps (see
+  // their own try/catches above) and are documented to resolve to null
+  // rather than reject on failure — these two extra catches are a last
+  // line of defense against that contract ever being violated by some
+  // future/unforeseen throw, so a bug in one tier can never take down
+  // the other or leave this function's own promise rejected (every
+  // caller only handles a resolved `scene`, never a rejection).
   const webxrOk = await isWebxrArSupported()
-  let backend = webxrOk ? await startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, frameCallbacks }) : null
-  if (!backend) backend = await startPassthroughBackend({ scene, canvas, video, frameCallbacks })
+  let backend = webxrOk
+    ? await startWebxrBackend({ scene, anchorGroup, canvas, domOverlayRoot, frameCallbacks }).catch(() => null)
+    : null
+  if (!backend) backend = await startPassthroughBackend({ scene, canvas, video, frameCallbacks }).catch(() => null)
   if (!backend) return null // truly nothing available
 
   return { scene, anchorGroup, onFrame, ...backend }

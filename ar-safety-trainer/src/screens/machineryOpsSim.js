@@ -111,7 +111,7 @@ export function renderMachineryOpsSim(main, navigate) {
     return anchorGroup.localToWorld(new THREE.Vector3(offset.x, offset.y, offset.z))
   }
 
-  const scenePromise = startPlacementScene({ canvas, video, domOverlayRoot: overlay }).then((scene) => {
+  const scenePromise = startPlacementScene({ canvas, video, domOverlayRoot: overlay }).catch(() => null).then((scene) => {
     if (leftScreen) {
       scene?.stop()
       return null
