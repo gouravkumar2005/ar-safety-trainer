@@ -1,0 +1,26 @@
+# Dependencies (every subproject's own package.json still lists them)
+node_modules/
+
+# Build output
+dist/
+# (the generated pitch-deck/*.pptx is intentionally tracked, not ignored —
+# it's a real deliverable judges/teammates may want to grab directly)
+
+# Raw uploaded model files at the repo root — these were staging copies;
+# the real, properly-named ones actually used by the app live in
+# ar-safety-trainer/public/models/. Keeping both would just duplicate
+# ~17MB of binary data for no reason.
+/*.glb
+
+# Local dev-only scratch (Playwright test driver from this session,
+# never part of the actual project)
+_verify-driver/
+
+# Claude Code project-local settings (local permissions/config, not
+# meant for a public repo)
+.claude/
+
+# OS / editor
+.DS_Store
+*.local
+Thumbs.db

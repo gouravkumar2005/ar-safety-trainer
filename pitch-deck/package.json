@@ -1,0 +1,11 @@
+{
+  "name": "sih26041-pitch-deck",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.js"
+  },
+  "devDependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}
