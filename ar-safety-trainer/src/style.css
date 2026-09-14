@@ -75,6 +75,11 @@ html, body {
 .btn:active { transform: scale(0.97); }
 .btn-primary { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
 .btn-accent { background: var(--accent); border-color: var(--accent); color: #1a1300; }
+/* Emergency Response quick-access — lives in the topbar (see main.js) so
+   it's reachable in one tap from anywhere in the app, not just the home
+   screen's module list. Deliberately the loudest button in the UI: an
+   actual accident is the one moment a worker won't want to hunt for it. */
+.btn-sos { background: var(--bad); border-color: var(--bad); color: #fff; }
 .btn-block { width: 100%; padding: 14px 16px; font-size: 0.9375rem; border-radius: 12px; }
 .btn-ghost { background: transparent; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }

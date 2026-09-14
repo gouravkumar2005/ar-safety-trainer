@@ -186,6 +186,7 @@ export const STRINGS = {
     emergencyPoseAssistBtn: '📷 Show me on camera',
     emergencyPoseAssistNote: 'This only points to where on the body, based on the injury you already told it — it never guesses what happened.',
     emergencyGuideNotFound: "That guide isn't available.",
+    emergencyQuickAccessBtn: 'Emergency Response — first aid help',
     emergencyCompleteBody: "You've been through every step. Keep helping until trained medical help arrives — you can reopen this guide any time.",
   },
   hi: {
@@ -365,6 +366,7 @@ export const STRINGS = {
     emergencyPoseAssistBtn: '📷 मुझे कैमरे पर दिखाएं',
     emergencyPoseAssistNote: 'यह केवल शरीर पर वहां इशारा करता है जहां, आपके पहले से बताए गए चोट के आधार पर — यह कभी अनुमान नहीं लगाता कि क्या हुआ।',
     emergencyGuideNotFound: 'वह गाइड उपलब्ध नहीं है।',
+    emergencyQuickAccessBtn: 'आपातकालीन प्रतिक्रिया — प्राथमिक चिकित्सा सहायता',
     emergencyCompleteBody: 'आपने सभी चरण पूरे कर लिए। प्रशिक्षित चिकित्सा सहायता आने तक मदद जारी रखें — आप इस गाइड को कभी भी दोबारा खोल सकते हैं।',
   },
 }

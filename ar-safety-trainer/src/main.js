@@ -28,6 +28,7 @@ app.innerHTML = `
       <span id="brand-tagline"></span>
     </div>
     <div class="stack" style="flex-direction:row;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="btn btn-sos" id="emergency-nav-btn" title="Emergency">🚨</button>
       <button class="btn" id="text-size-btn" title="Text size">Aa</button>
       <button class="btn" id="sound-btn" title="Sound"></button>
       <button class="btn" id="verify-nav-btn"></button>
@@ -60,6 +61,7 @@ function paintChrome() {
   app.querySelector('#lang-btn').textContent = t('langToggle')
   app.querySelector('#verify-nav-btn').textContent = t('verify')
   app.querySelector('#text-size-btn').setAttribute('aria-label', t('textSizeBtn'))
+  app.querySelector('#emergency-nav-btn').setAttribute('aria-label', t('emergencyQuickAccessBtn'))
   paintSoundBtn()
 }
 
@@ -75,6 +77,9 @@ app.querySelector('#lang-btn').addEventListener('click', () => {
   route()
 })
 app.querySelector('#verify-nav-btn').addEventListener('click', () => navigate('#/verify'))
+// Always reachable in one tap, from any screen — the whole point is not
+// making someone hunt through the home screen's module list mid-accident.
+app.querySelector('#emergency-nav-btn').addEventListener('click', () => navigate(`#/module/${EMERGENCY_RESPONSE_MODULE_ID}`))
 app.querySelector('#text-size-btn').addEventListener('click', () => {
   textSizeIndex = (textSizeIndex + 1) % TEXT_SIZES.length
   localStorage.setItem('textSize', TEXT_SIZES[textSizeIndex])
@@ -132,7 +137,11 @@ function route() {
   // A redirect (no visible frame of its own) shouldn't get wrapped in a
   // transition — that would animate nothing and just add latency before
   // the real destination renders.
-  if (PPE_GATE_ENABLED && params.id && params.id !== PPE_GATE_MODULE_ID) {
+  // Emergency Response is exempt from the gate on purpose, gate-enabled
+  // or not — the topbar's 🚨 button promises one-tap access from
+  // anywhere, and blocking real first-aid help behind an unrelated
+  // induction quiz would be actively dangerous during an actual accident.
+  if (PPE_GATE_ENABLED && params.id && params.id !== PPE_GATE_MODULE_ID && params.id !== EMERGENCY_RESPONSE_MODULE_ID) {
     const ppeResult = getResult(PPE_GATE_MODULE_ID)
     if (!ppeResult?.passed) {
       navigate(`#/module/${PPE_GATE_MODULE_ID}`)
