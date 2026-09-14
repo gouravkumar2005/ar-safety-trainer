@@ -17,6 +17,8 @@ import { renderTour } from './screens/tour.js'
 import { renderEmergencyHub } from './screens/emergencyHub.js'
 import { renderEmergencyGuide } from './screens/emergencyGuide.js'
 import { renderCprCameraAssist } from './screens/cprCameraAssist.js'
+import { renderPpeEquipSim } from './screens/ppeEquipSim.js'
+import { renderMachineryOpsSim } from './screens/machineryOpsSim.js'
 import { isMuted, toggleMuted } from './utils/sound.js'
 
 const app = document.querySelector('#app')
@@ -101,6 +103,8 @@ app.querySelector('#sound-btn').addEventListener('click', () => {
 // #/module/emergency-response       -> voice/manual first-aid hub (no .glb, see below)
 // #/module/emergency-response/guide/:guideId  -> narrated first-aid steps
 // #/module/emergency-response/camera/cpr      -> real hand-motion CPR rate assist
+// #/module/ppe-compliance/equip     -> interactive drag-to-equip AR sim
+// #/module/machinery-safety/ops     -> interactive drag-to-operate AR sim
 // #/verify                          -> paste/check a certificate's ledger signature
 // #/admin                           -> compliance dashboard (export/import a device's data)
 //
@@ -176,6 +180,12 @@ function route() {
         break
       case 'camera':
         renderCprCameraAssist(main, navigate)
+        break
+      case 'equip':
+        renderPpeEquipSim(main, navigate)
+        break
+      case 'ops':
+        renderMachineryOpsSim(main, navigate)
         break
       case 'gallery':
         params.itemId ? renderItemViewer(main, navigate, params) : renderItemGallery(main, navigate, params)

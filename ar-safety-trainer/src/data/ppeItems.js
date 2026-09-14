@@ -19,6 +19,12 @@
 // ppeItemViewer.js for how it's applied. Test in real AR on a phone and
 // adjust any that still look off — same spirit as the hotspot-position
 // tuning note in modules.js.
+//
+// `consequence`: new, additive field — narrated by ppeEquipSim.js right
+// after each item is equipped ("if you skip this, X can happen"). Same
+// underlying facts as `info` above, just reframed negatively for that
+// moment; doesn't touch `info`, which other screens (hotspot sheet,
+// gallery) still use as-is.
 
 export const ppeItems = [
   {
@@ -30,6 +36,10 @@ export const ppeItems = [
       en: 'Protects against falling debris and low-roof strikes; the lamp is your primary light source underground — check its charge before every shift.',
       hi: 'गिरते मलबे और नीची छत की चोट से बचाता है; लैंप भूमिगत आपका मुख्य प्रकाश स्रोत है — हर शिफ्ट से पहले इसकी चार्जिंग जांचें।',
     },
+    consequence: {
+      en: "Without it, falling rock or a low-roof strike can cause a fatal head injury in seconds — that's why it's the first thing you put on.",
+      hi: 'इसके बिना, गिरता पत्थर या नीची छत की चोट कुछ ही सेकंड में जानलेवा सिर की चोट का कारण बन सकती है — इसीलिए यह सबसे पहले पहना जाता है।',
+    },
   },
   {
     id: 'ppe-scsr',
@@ -39,6 +49,10 @@ export const ppeItems = [
     info: {
       en: 'Emergency breathing device for escape during fire or gas emergencies. Must be worn on your belt at all times — never left at the surface or in a locker.',
       hi: 'आग या गैस आपातकाल में बचने के लिए आपातकालीन श्वास उपकरण। इसे हमेशा अपनी बेल्ट पर पहनना चाहिए — कभी सतह पर या लॉकर में न छोड़ें।',
+    },
+    consequence: {
+      en: 'Without it on your belt, a sudden gas or fire emergency gives you no way to breathe safely while escaping — seconds decide survival underground.',
+      hi: 'इसे बेल्ट पर न पहनने पर, अचानक गैस या आग की आपातस्थिति में बचकर निकलते समय सुरक्षित सांस लेने का कोई तरीका नहीं बचता — भूमिगत में सेकंड ही जीवन-मृत्यु तय करते हैं।',
     },
   },
   {
@@ -50,6 +64,10 @@ export const ppeItems = [
       en: 'Makes you visible to machine operators and vehicle drivers in low light. Damaged or faded reflective strips must be reported and replaced.',
       hi: 'कम रोशनी में मशीन ऑपरेटरों और वाहन चालकों को आपको देखने में मदद करता है। क्षतिग्रस्त या फीकी रिफ्लेक्टिव पट्टी की सूचना देकर बदलवाएं।',
     },
+    consequence: {
+      en: 'Without it, a machine operator or vehicle driver may simply not see you in low light before it is too late.',
+      hi: 'इसके बिना, कम रोशनी में मशीन ऑपरेटर या वाहन चालक को आप समय रहते दिख ही नहीं सकते।',
+    },
   },
   {
     id: 'ppe-boots',
@@ -60,6 +78,10 @@ export const ppeItems = [
       en: 'Protects feet from falling material and crush hazards, with slip-resistant soles for wet or uneven mine floors.',
       hi: 'गिरने वाली सामग्री और कुचलने के खतरे से पैरों की रक्षा करता है, और गीले या असमान खदान फर्श के लिए फिसलन-रोधी सोल होता है।',
     },
+    consequence: {
+      en: 'Without steel-toe boots, a dropped tool or falling material can crush or break the bones in your foot.',
+      hi: 'स्टील-टो बूट्स के बिना, गिरा हुआ औज़ार या सामग्री आपके पैर की हड्डियों को कुचल या तोड़ सकती है।',
+    },
   },
   {
     id: 'ppe-gas-detector',
@@ -69,6 +91,10 @@ export const ppeItems = [
     info: {
       en: 'Clipped to your vest, it continuously monitors methane and other hazardous gases and alarms before levels become dangerous. Never enter a work area if it fails its start-up self-test.',
       hi: 'आपकी वेस्ट पर क्लिप किया गया यह उपकरण मीथेन और अन्य खतरनाक गैसों की लगातार निगरानी करता है और खतरनाक स्तर से पहले अलार्म देता है। यदि यह स्टार्ट-अप सेल्फ-टेस्ट में विफल हो तो कार्य क्षेत्र में प्रवेश न करें।',
+    },
+    consequence: {
+      en: 'Without it, you get no warning before methane or another gas reaches a dangerous, explosive level.',
+      hi: 'इसके बिना, मीथेन या किसी अन्य गैस के खतरनाक, विस्फोटक स्तर तक पहुंचने से पहले कोई चेतावनी नहीं मिलती।',
     },
   },
 ]

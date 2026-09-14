@@ -80,6 +80,25 @@ html, body {
    screen's module list. Deliberately the loudest button in the UI: an
    actual accident is the one moment a worker won't want to hunt for it. */
 .btn-sos { background: var(--bad); border-color: var(--bad); color: #fff; }
+/* Draggable item chips in the interactive AR sims (ppeEquipSim.js /
+   machineryOpsSim.js) — a small fixed-size tile rather than a normal
+   pill button, since these carry an emoji + short label and get
+   repositioned with inline left/top while dragging. */
+.ppe-chip, .ops-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 72px;
+  min-height: 60px;
+  padding: 6px 4px;
+  text-align: center;
+  background: rgba(20,20,24,0.85);
+  color: #fff;
+  border-color: rgba(255,255,255,0.25);
+}
+.ppe-chip:active, .ops-chip:active { transform: scale(0.96); }
 .btn-block { width: 100%; padding: 14px 16px; font-size: 0.9375rem; border-radius: 12px; }
 .btn-ghost { background: transparent; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }

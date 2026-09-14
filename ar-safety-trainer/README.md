@@ -55,17 +55,37 @@ install. So the plan is two phases:
     dedicated rotate/zoom/AR-place viewer, on-screen detail text, and a
     "Listen" button that narrates in whichever language is active. Purely
     additive — the combined-model view and its quiz/gate are unchanged.
-    Also has a **guided tour mode** (`src/screens/tour.js`, "🎮 Play as a
-    Guided Tour" button) — swipe or tap through all 5 items one at a time,
-    each auto-narrated, ending on a "Fully Equipped!" reveal of the
-    combined model with a confetti burst.
+    Its "🎮 Play as a Guided Tour" button opens an **interactive
+    drag-to-equip AR sim** (`src/screens/ppeEquipSim.js`) instead of a
+    passive walkthrough: a stylized procedural mannequin
+    (`src/utils/proceduralModels.js` — plain Three.js primitives, no new
+    3D asset) stands in the camera view and you drag each of the 5 real
+    PPE item models onto it in sequence; equipping one narrates, in
+    Hindi/English, the real injury risk of skipping it
+    (`ppeItems.js`'s `consequence` field), ending on the same "Fully
+    Equipped!" + confetti screen as before. Placement is a real,
+    world-anchored WebXR AR session on devices that support it (Android
+    Chrome, via `hit-test` + `dom-overlay`) and automatically falls back
+    to a fixed camera-preview overlay everywhere else — same shared
+    core (`src/utils/xrPlacementScene.js`) both new sims use, and the
+    active tier is shown on-screen, never silently swapped. If neither
+    can start at all (no camera, no WebGL), it falls back to the
+    original `tour.js` walkthrough rather than a broken screen — that
+    screen is unchanged and still what every locked-for-now module will
+    use once unlocked.
   - **Machinery Safety** — your "continuous miner" model
     (`public/models/continuous-miner.glb`), with hotspots/quiz on the real
     hazards of that machine (methane/coal-dust ignition at the cutting
     drum, mechanical pinch points, the high-voltage trailing cable, roof
-    fall risk, lockout-tagout). Its own guided tour walks the camera
-    through those same hotspots in sequence, narrated — "how the machine
-    works," step by step, reusing the exact hotspot data, no new content.
+    fall risk, lockout-tagout). Its guided tour is the same kind of
+    interactive AR sim (`src/screens/machineryOpsSim.js`, a tabletop
+    **diorama scale** — deliberately not the 1:1 scale the normal AR
+    viewer uses for this model): drag the miner into a procedural coal
+    pile (`buildCoalPile()`, same honest-placeholder spirit as the
+    mannequin) to "cut" it while the module's 5 existing hotspots
+    narrate in sequence — zero new machinery content, just replayed
+    through this richer interaction — then drag the conveyor belt into
+    place to carry the coal out, narrating its existing hazard copy.
     Also has an item gallery of its own real models — **Forklift** and
     **Conveyor Belt** (`src/data/machineryItems.js`) — general equipment
     hazards (tip-over/blind-spot risk; belt nip points/entanglement)

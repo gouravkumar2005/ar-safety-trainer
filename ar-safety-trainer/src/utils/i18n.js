@@ -187,6 +187,20 @@ export const STRINGS = {
     emergencyPoseAssistNote: 'This only points to where on the body, based on the injury you already told it — it never guesses what happened.',
     emergencyGuideNotFound: "That guide isn't available.",
     emergencyQuickAccessBtn: 'Emergency Response — first aid help',
+
+    // Interactive AR sims — ppeEquipSim.js / machineryOpsSim.js
+    arSimBackendWebxr: '🟢 Real AR placement',
+    arSimBackendPassthrough: '📷 Camera preview',
+    arSimIllustrativeNote: 'The figure/coal here are simplified illustrations, not exact 3D scans — the real item models you drag onto them are the actual training assets.',
+    arSimTapToPlaceHint: 'Tap the ground in the camera view to place it',
+    arSimUseSimpleTourBtn: 'Use the simple walkthrough instead',
+    arSimDragHint: 'Drag the glowing {item} onto the figure',
+    arSimEquippedLabel: '✓ Equipped',
+    machSimDragMinerHint: 'Drag the continuous miner into the coal face',
+    machSimDragBeltHint: 'Drag the conveyor belt under the cut coal',
+    machSimCuttingLabel: 'Cutting…',
+    machSimTransportingLabel: 'Transporting coal out…',
+
     emergencyCompleteBody: "You've been through every step. Keep helping until trained medical help arrives — you can reopen this guide any time.",
   },
   hi: {
@@ -367,6 +381,20 @@ export const STRINGS = {
     emergencyPoseAssistNote: 'यह केवल शरीर पर वहां इशारा करता है जहां, आपके पहले से बताए गए चोट के आधार पर — यह कभी अनुमान नहीं लगाता कि क्या हुआ।',
     emergencyGuideNotFound: 'वह गाइड उपलब्ध नहीं है।',
     emergencyQuickAccessBtn: 'आपातकालीन प्रतिक्रिया — प्राथमिक चिकित्सा सहायता',
+
+    // इंटरैक्टिव AR सिम्युलेशन
+    arSimBackendWebxr: '🟢 वास्तविक AR प्लेसमेंट',
+    arSimBackendPassthrough: '📷 कैमरा प्रीव्यू',
+    arSimIllustrativeNote: 'यहां का चित्र/कोयला सरलीकृत चित्रण हैं, सटीक 3D स्कैन नहीं — जिन असली आइटम मॉडल को आप इन पर खींचते हैं वही असली प्रशिक्षण सामग्री हैं।',
+    arSimTapToPlaceHint: 'इसे रखने के लिए कैमरा दृश्य में ज़मीन पर टैप करें',
+    arSimUseSimpleTourBtn: 'इसके बजाय सामान्य वॉकथ्रू का उपयोग करें',
+    arSimDragHint: 'चमकते हुए {item} को चित्र पर खींचें',
+    arSimEquippedLabel: '✓ पहना दिया गया',
+    machSimDragMinerHint: 'कंटीन्यूअस माइनर को कोयला फेस पर खींचें',
+    machSimDragBeltHint: 'कन्वेयर बेल्ट को कटे हुए कोयले के नीचे खींचें',
+    machSimCuttingLabel: 'कटाई हो रही है…',
+    machSimTransportingLabel: 'कोयला बाहर ले जाया जा रहा है…',
+
     emergencyCompleteBody: 'आपने सभी चरण पूरे कर लिए। प्रशिक्षित चिकित्सा सहायता आने तक मदद जारी रखें — आप इस गाइड को कभी भी दोबारा खोल सकते हैं।',
   },
 }

@@ -74,7 +74,15 @@ export function renderArViewer(main, navigate, params) {
   })
   main.querySelector('#tour-btn')?.addEventListener('click', () => {
     stopSpeaking()
-    navigate(`#/module/${mod.id}/tour`)
+    // ppe-compliance and machinery-safety have a richer interactive
+    // drag-to-equip/drag-to-operate AR sim instead of the plain
+    // swipe-through walk — see ppeEquipSim.js / machineryOpsSim.js. Every
+    // other module still gets the generic tour.js walk (and these two
+    // fall back to it themselves if the AR sim's placement scene can't
+    // start on this device — see xrPlacementScene.js).
+    if (mod.id === 'ppe-compliance') navigate(`#/module/${mod.id}/equip`)
+    else if (mod.id === 'machinery-safety') navigate(`#/module/${mod.id}/ops`)
+    else navigate(`#/module/${mod.id}/tour`)
   })
 
   const mv = main.querySelector('#mv')
