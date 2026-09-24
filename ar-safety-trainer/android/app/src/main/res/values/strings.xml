@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AR Safety Trainer</string>
+    <string name="title_activity_main">AR Safety Trainer</string>
+    <string name="package_name">in.gov.jharkhand.arsafetytrainer</string>
+    <string name="custom_url_scheme">in.gov.jharkhand.arsafetytrainer</string>
+</resources>

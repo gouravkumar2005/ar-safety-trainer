@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Mining helmet with cap lamp. Kept inside the central ~66% "safe zone"
+       so Android's adaptive-icon masks (circle, squircle...) never clip it. -->
+  <path d="M292 600 C292 400 392 300 512 300 C632 300 732 400 732 600 Z" fill="#ffb020"/>
+  <rect x="490" y="306" width="44" height="294" rx="10" fill="#e08e00"/>
+  <rect x="242" y="588" width="540" height="72" rx="36" fill="#e08e00"/>
+  <circle cx="512" cy="468" r="66" fill="#0b0f17"/>
+  <circle cx="512" cy="468" r="46" fill="#fff6d6"/>
+</svg>
