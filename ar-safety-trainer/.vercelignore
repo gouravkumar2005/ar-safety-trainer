@@ -1,0 +1,7 @@
+# Not needed to build the website; keeps the Vercel upload small.
+android/
+assets/
+dist/
+node_modules/
+public/mediapipe/
+*.apk
