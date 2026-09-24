@@ -53,12 +53,16 @@ export function setWorker(name, id, uan = '') {
   save()
 }
 
-// The logged-in account's results ({} if nobody is logged in).
+// Results bucket used when nobody is logged in (accounts switched off in
+// config.js — then all training on this device shares one set of results,
+// as it did before accounts existed).
+const DEVICE_RESULTS = 'device'
+
+// The logged-in account's results (or this device's, with accounts off).
 export function getAllResults() {
-  const userId = getCurrentUser()?.id
-  if (userId == null) return {}
-  state.resultsByUser[userId] ??= {}
-  return state.resultsByUser[userId]
+  const key = getCurrentUser()?.id ?? DEVICE_RESULTS
+  state.resultsByUser[key] ??= {}
+  return state.resultsByUser[key]
 }
 
 export async function recordResult(moduleId, { score, total, answers }) {

@@ -87,7 +87,11 @@ Import rules that keep it easy to follow:
 ## What's built
 
 - **Accounts, login and profiles** (`src/features/account/` + the
-  [accounts server](../server/README.md)). Registration asks for:
+  [accounts server](../server/README.md)). **Currently switched OFF**
+  (`ACCOUNTS_ENABLED` in `src/config.js`) until the server is hosted.
+  While it's off, the website and app work without login, exactly as they
+  did before accounts existed. Set it to `true` once the Render + Neon
+  server is live, and everything below turns on for both. Registration asks for:
   - role (Worker / Supervisor / Administrator)
   - full name, work ID and mobile number
   - employer, district (all 24 Jharkhand districts) and designation

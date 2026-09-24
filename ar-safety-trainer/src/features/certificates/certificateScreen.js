@@ -1,6 +1,7 @@
 import { getModule } from '../../content/modules.js'
 import { t, pick } from '../../core/i18n/index.js'
-import { getResult, state } from '../../core/state.js'
+import { getResult, state, setWorker } from '../../core/state.js'
+import { isLoggedIn } from '../../core/session.js'
 import { escapeHtml } from '../../shared/ui/html.js'
 import { buildCertificatePayload, certificateToQrDataUrl } from './certificate.js'
 import { playCertChime } from '../../shared/ui/sound.js'
@@ -17,34 +18,40 @@ export function renderCertificate(main, navigate, params) {
   renderForm()
 
   function renderForm() {
+    // Logged in: identity comes from the profile and is read-only. With
+    // accounts switched off (config.js), the worker types it in as before.
+    const locked = isLoggedIn() ? 'readonly' : ''
     main.innerHTML = `
       <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
       <h2 class="h2-title" style="margin:12px 0 16px;">${t('getCertificate')}</h2>
 
-      <!-- Name and work ID come from the logged-in account (edit them on
+      <!-- When logged in, name and work ID come from the account (edited on
            the profile screen), so a certificate can't be issued under
            someone else's identity from this form. -->
       <div class="field">
         <label for="worker-name">${t('workerName')}</label>
-        <input id="worker-name" type="text" value="${escapeHtml(state.worker.name)}" readonly />
+        <input id="worker-name" type="text" value="${escapeHtml(state.worker.name)}" placeholder="e.g. Sunita Murmu" ${locked} />
       </div>
       <div class="field">
         <label for="worker-id">${t('workerId')}</label>
-        <input id="worker-id" type="text" value="${escapeHtml(state.worker.id)}" readonly />
+        <input id="worker-id" type="text" value="${escapeHtml(state.worker.id)}" placeholder="e.g. JH-MINE-00214" ${locked} />
       </div>
       <div class="field">
         <label for="worker-uan">${t('workerUan')}</label>
-        <input id="worker-uan" type="text" value="${escapeHtml(state.worker.uan)}" readonly />
+        <input id="worker-uan" type="text" value="${escapeHtml(state.worker.uan)}" placeholder="e.g. 12-3456-7890-1234" ${locked} />
         <p class="hint" style="text-align:left;margin-top:4px;">${t('uanFieldHint')}</p>
       </div>
-      <p class="field-hint" style="margin:-4px 0 14px;">${t('certFromProfileNote')}</p>
+      ${locked ? `<p class="field-hint" style="margin:-4px 0 14px;">${t('certFromProfileNote')}</p>` : ''}
 
       <button class="btn btn-accent btn-block" id="gen-btn">${t('generateCert')}</button>
     `
     main.querySelector('#back').addEventListener('click', () => navigate(`#/module/${mod.id}/result`))
     main.querySelector('#gen-btn').addEventListener('click', async () => {
-      const { name, id, uan } = state.worker
+      const name = main.querySelector('#worker-name').value.trim()
+      const id = main.querySelector('#worker-id').value.trim()
+      const uan = main.querySelector('#worker-uan').value.trim()
       if (!name || !id) return
+      if (!locked) setWorker(name, id, uan)
       await renderCert(name, id, uan)
     })
   }

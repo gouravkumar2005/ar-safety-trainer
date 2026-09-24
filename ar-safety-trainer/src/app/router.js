@@ -3,12 +3,13 @@
 // file matches the current hash against them, checks access, and renders
 // the winner.
 //
-// Access flags a route can set (default: any logged-in user):
+// Access flags a route can set (default: any logged-in user). They only
+// apply while ACCOUNTS_ENABLED is on; with it off, every route is open.
 //   public: true      reachable without logging in (emergency, verify)
 //   guestOnly: true   only when logged out (login, register)
 //   roles: [...]      only these roles (e.g. ['admin'])
 
-import { PPE_GATE_ENABLED } from '../config.js'
+import { PPE_GATE_ENABLED, ACCOUNTS_ENABLED } from '../config.js'
 import { PPE_GATE_MODULE_ID, EMERGENCY_RESPONSE_MODULE_ID } from '../content/modules.js'
 import { getResult } from '../core/state.js'
 import { isLoggedIn, hasRole, rememberReturnPath, onSessionChange } from '../core/session.js'
@@ -49,6 +50,7 @@ function resolve(path) {
 
 // Where to send the user instead, if they may not see this route.
 function accessRedirect(route) {
+  if (!ACCOUNTS_ENABLED) return null
   if (route.guestOnly && isLoggedIn()) return '#/'
   if (!route.public && !route.guestOnly && !isLoggedIn()) return '#/login'
   if (route.roles && !hasRole(...route.roles)) return '#/'

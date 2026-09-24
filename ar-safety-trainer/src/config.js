@@ -1,10 +1,17 @@
 // App-wide settings in one place.
 
-// Where the website is hosted. The Android app bundles everything locally,
-// but Google Scene Viewer ("View in your space" in the APK) runs as a
-// separate app and can't read files inside ours, so it's handed the hosted
-// copy of each model instead — see platform/arLauncher.js.
+// Where the website is hosted. The Android app bundles everything locally;
+// only its AR fallback for phones without ARCore (Google Scene Viewer, a
+// separate app that can't read files inside ours) loads the hosted copy of
+// a model from here — see platform/arLauncher.js.
 export const PUBLIC_SITE_URL = 'https://ar-safety-trainer.vercel.app'
+
+// Accounts & login (features/account + ../server). OFF until the accounts
+// server is hosted (see ../server/README.md): the website and the app then
+// work without login, exactly like before accounts existed. Switch to
+// true once PRODUCTION_API_URL below is live — login, profiles and
+// per-account results turn on everywhere with that one change.
+export const ACCOUNTS_ENABLED = false
 
 // The accounts server (see ../server and ../render.yaml). ONE address for
 // both the website and the Android app, so they always share the same
