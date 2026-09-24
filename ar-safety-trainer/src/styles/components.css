@@ -1,0 +1,154 @@
+/* Reusable UI building blocks shared by several features: top bar,
+   buttons, cards, badges, form fields, key/value rows, notes. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.topbar .brand { display: flex; flex-direction: column; gap: 2px; }
+.topbar .brand strong { font-size: 1.0625rem; }
+.topbar .brand span { font-size: 0.75rem; color: var(--text-dim); }
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: #1a1300; }
+/* Emergency Response quick-access — lives in the topbar (see app/shell.js) so
+   it's reachable in one tap from anywhere in the app, not just the home
+   screen's module list. Deliberately the loudest button in the UI: an
+   actual accident is the one moment a worker won't want to hunt for it. */
+.btn-sos { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn-block { width: 100%; padding: 14px 16px; font-size: 0.9375rem; border-radius: 12px; }
+.btn-ghost { background: transparent; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.module-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.module-card.locked { opacity: 0.55; }
+.module-card h3 { margin: 0; font-size: 1rem; }
+.module-card p { margin: 0; font-size: 0.8125rem; color: var(--text-dim); }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  width: fit-content;
+}
+.badge-active { background: rgba(47,191,113,0.15); color: var(--good); }
+.badge-locked { background: rgba(154,167,187,0.12); color: var(--text-dim); }
+/* WCAG 1.4.3 — the original 0.15 alpha measured 4.01:1 (needs 4.5:1)
+   against this pill's own tinted background. --bad itself is untouched
+   (it passes everywhere else it's used); only this badge's tint changes. */
+.badge-bad { background: rgba(239,68,68,0.03); color: var(--bad); }
+.badge-warn { background: rgba(255,176,32,0.15); color: var(--accent); }
+
+.result-box {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-top: 14px;
+}
+.result-box.result-valid { border-color: var(--good); background: rgba(47,191,113,0.08); }
+.result-box.result-tampered { border-color: var(--bad); background: rgba(239,68,68,0.08); }
+.result-box.result-warn { border-color: var(--accent); background: rgba(255,176,32,0.08); }
+.result-box h4 { margin: 0 0 6px; font-size: 1rem; }
+.result-box p { margin: 0; font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+textarea.ta {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-family: ui-monospace, monospace;
+  resize: vertical;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+.kv-row:last-child { border-bottom: none; }
+.kv-row .k { color: var(--text-dim); }
+.kv-row .v { font-weight: 600; text-align: right; }
+
+.progress-dots { display: flex; gap: 6px; margin-bottom: 16px; }
+.progress-dots span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+.progress-dots span.done { background: var(--accent-2); }
+.progress-dots span.current { background: var(--accent); }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.note {
+  font-size: 0.71875rem;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+.offline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--good);
+  margin-top: 6px;
+}
+.offline-pill::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good);
+}
+

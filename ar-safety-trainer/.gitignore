@@ -25,3 +25,9 @@ dist-ssr
 
 .vercel
 .env*
+
+# Generated build inputs (see scripts/fetch-ml-assets.mjs)
+public/mediapipe/
+
+# Rendered from the SVGs by scripts/generate-icons.mjs
+assets/*.png

@@ -1,19 +1,37 @@
 {
   "name": "ar-safety-trainer",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/fetch-ml-assets.mjs",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prebuild:android": "node scripts/fetch-ml-assets.mjs",
+    "build:android": "vite build --mode android && cap sync android",
+    "apk:debug": "npm run build:android && node scripts/gradle.mjs assembleDebug",
+    "apk:release": "npm run build:android && node scripts/gradle.mjs assembleRelease",
+    "android:icons": "node scripts/generate-icons.mjs"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "vite": "^8.3.0",
     "vite-plugin-pwa": "^1.3.0"
   },
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor-community/text-to-speech": "^8.0.2",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/clipboard": "^8.0.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/share": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@google/model-viewer": "^4.3.1",
     "@mediapipe/tasks-vision": "^1.0.1",
     "qrcode": "^1.5.4",

@@ -1,0 +1,22 @@
+/* Certificates feature: the issued certificate card. */
+
+.cert-card {
+  background: linear-gradient(160deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  /* Replays automatically every time a cert is generated, since
+     certificate.js creates a fresh element via innerHTML each time —
+     no JS needed to trigger it. */
+  animation: certReveal 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+@keyframes certReveal {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.cert-card img { border-radius: 10px; background: #fff; padding: 8px; margin: 14px auto; display: block; }
+.cert-card .cert-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.cert-card .cert-value { font-size: 0.9375rem; font-weight: 600; margin-bottom: 10px; }
+.cert-card .cert-value-lg { font-size: 1.25rem; }
+

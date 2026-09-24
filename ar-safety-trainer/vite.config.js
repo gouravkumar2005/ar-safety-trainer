@@ -2,54 +2,72 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
-// SIH26041 — AR Safety Trainer
+// SIH26041 — AR Safety Trainer. One codebase, two build targets:
+//
+//   npm run build           -> website / PWA (default mode)
+//   npm run build:android   -> the same app for the Android APK (--mode android)
+//
+// The Android build leaves out the service worker: everything is already
+// bundled inside the APK, and a service worker there would only risk
+// serving a stale copy of the app after an update.
+//
 // Dev server binds to 0.0.0.0 so you can open it on a phone on the same
-// Wi-Fi (needed to test the AR "view in your space" button on Android
-// Chrome). It's also served over HTTPS (self-signed, browser will warn —
+// Wi-Fi. It's also served over HTTPS (self-signed, browser will warn —
 // tap through "Advanced > Proceed") because Web Crypto (crypto.subtle,
-// used throughout src/utils/ledger.js) only runs in a "secure context",
+// used throughout src/core/ledger.js) only runs in a "secure context",
 // and a plain http://<lan-ip> URL doesn't count as one, only https:// and
-// localhost do. Without this, certificates/verification would silently
-// break specifically when testing on a phone over LAN, while still
-// appearing to work on the PC (which was hitting localhost).
-export default defineConfig({
-  server: {
-    host: true,
-    port: 5173,
-  },
-  plugins: [
-    basicSsl(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
-      manifest: {
-        name: 'AR Safety Trainer — Jharkhand Mines & Manufacturing',
-        short_name: 'AR Safety Trainer',
-        description: 'AR-based vocational training & certification for industrial safety',
-        theme_color: '#0b5fff',
-        background_color: '#0b0f17',
-        display: 'standalone',
-        start_url: '/',
-        icons: [
-          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-        ],
-      },
-      workbox: {
-        // Cache the app shell + 3D models so training works with no signal
-        // underground / on a mine site, per the PS's offline requirement.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024, // glb models can be large
-        runtimeCaching: [
-          {
-            urlPattern: /\/models\/.*\.glb$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'ar-models',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
-      },
-    }),
-  ],
+// localhost do. (The Android app gets a secure context from Capacitor's
+// https://localhost scheme — see capacitor.config.json.)
+
+// Keep a year of cache for large, rarely-changing assets.
+const LONG_CACHE = { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 }
+
+function pwaPlugin() {
+  return VitePWA({
+    registerType: 'autoUpdate',
+    includeAssets: ['favicon.svg'],
+    manifest: {
+      name: 'AR Safety Trainer — Jharkhand Mines & Manufacturing',
+      short_name: 'AR Safety Trainer',
+      description: 'AR-based vocational training & certification for industrial safety',
+      theme_color: '#0b5fff',
+      background_color: '#0b0f17',
+      display: 'standalone',
+      start_url: '/',
+      icons: [
+        { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      ],
+    },
+    workbox: {
+      // Cache the app shell + 3D models + on-device ML models so training
+      // works with no signal underground / on a mine site, per the PS's
+      // offline requirement.
+      globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+      globIgnores: ['mediapipe/**'], // cached on first use instead (below)
+      maximumFileSizeToCacheInBytes: 20 * 1024 * 1024, // glb models can be large
+      runtimeCaching: [
+        {
+          urlPattern: /\/models\/.*\.glb$/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'ar-models', expiration: LONG_CACHE },
+        },
+        {
+          urlPattern: /\/mediapipe\//,
+          handler: 'CacheFirst',
+          options: { cacheName: 'ml-models', expiration: LONG_CACHE },
+        },
+      ],
+    },
+  })
+}
+
+export default defineConfig(({ mode }) => {
+  const isAndroid = mode === 'android'
+  return {
+    server: {
+      host: true,
+      port: 5173,
+    },
+    plugins: isAndroid ? [] : [basicSsl(), pwaPlugin()],
+  }
 })

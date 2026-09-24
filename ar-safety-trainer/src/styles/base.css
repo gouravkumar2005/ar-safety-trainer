@@ -1,0 +1,92 @@
+/* Design tokens, reset, page layout, focus styles, typography helpers,
+   and screen-transition animation. Loaded first. */
+
+:root {
+  --bg: #0b0f17;
+  --surface: #131a26;
+  --surface-2: #1b2433;
+  /* WCAG 2.1 1.4.11 (non-text contrast, needs 3.0:1) — the old #263143
+     measured 1.33:1 against --surface / 1.46:1 against --bg, a real fail
+     for card/input borders. This clears both (3.52 / 3.87) — borders are
+     now genuinely visible instead of barely-there; that's an intentional
+     look change, not just an invisible compliance tweak. */
+  --border: #5c7099;
+  --text: #eef2f7;
+  --text-dim: #9aa7bb;
+  --accent: #ffb020;
+  --accent-2: #0b5fff;
+  --good: #2fbf71;
+  --bad: #ef4444;
+  --radius: 14px;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+  font-size: 100%; /* baseline for the rem-based text-size toggle below */
+}
+
+/* Text-size control (app/shell.js's #text-size-btn) — every font-size in this
+   file is rem, so one class here scales the whole app uniformly. Padding/
+   border-radius/gaps intentionally stay px: WCAG 1.4.4 (Resize Text) is
+   about text, not decorative geometry. */
+html.text-lg { font-size: 118.75%; }
+html.text-xl { font-size: 137.5%; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* WCAG 2.4.7 (Focus Visible) — no rule existed before, so visibility
+   depended entirely on each browser's inconsistent default outline
+   against a dark theme. This applies one explicit, high-contrast style
+   everywhere a keyboard user can land. */
+.btn:focus-visible,
+.option:focus-visible,
+.hotspot-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+main { flex: 1; padding: 16px 18px 32px; }
+
+.h2-title { font-size: 1.1875rem; }
+.subtitle-dim { font-size: 0.8125rem; color: var(--text-dim); }
+.text-xs-dim { font-size: 0.75rem; color: var(--text-dim); }
+.card-h3 { font-size: 0.875rem; }
+
+.stack { display: flex; flex-direction: column; gap: 10px; }
+
+/* Screen-to-screen navigation (app/router.js wraps render() in
+   document.startViewTransition when the browser supports it — this just
+   customizes the default cross-fade so it reads as deliberate rather than
+   a bare browser default. Unsupported browsers simply never generate
+   these pseudo-elements, so nothing here affects them. */
+::view-transition-old(root) {
+  animation: viewFadeOut 0.2s ease-in both;
+}
+::view-transition-new(root) {
+  animation: viewFadeIn 0.22s ease-out both;
+}
+@keyframes viewFadeOut {
+  to { opacity: 0; }
+}
+@keyframes viewFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

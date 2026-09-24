@@ -1,0 +1,35 @@
+/* Training feature: quiz questions/options and the result score ring. */
+
+.question { font-size: 1.0625rem; font-weight: 600; margin-bottom: 18px; line-height: 1.4; }
+.option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.option:active { transform: scale(0.98); }
+.option.selected { border-color: var(--accent-2); background: rgba(11,95,255,0.12); }
+.option.correct { border-color: var(--good); background: rgba(47,191,113,0.12); }
+.option.incorrect { border-color: var(--bad); background: rgba(239,68,68,0.12); }
+
+.score-ring-wrap {
+  position: relative;
+  width: 140px; height: 140px;
+  margin: 24px auto;
+}
+.score-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+.score-ring-text strong { font-size: 1.875rem; }
+.score-ring-text span { font-size: 0.75rem; color: var(--text-dim); }
+
