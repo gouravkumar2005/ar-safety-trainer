@@ -39,8 +39,19 @@ export function getLang() {
 }
 
 export function toggleLang() {
-  currentLang = currentLang === 'en' ? 'hi' : 'en'
+  setLang(currentLang === 'en' ? 'hi' : 'en')
+}
+
+// Used to apply a user's preferred language when they log in.
+export function setLang(code) {
+  if (!STRINGS[code]) return
+  currentLang = code
   localStorage.setItem('lang', currentLang)
+}
+
+// Whether a translation key exists (for optional, more specific messages).
+export function hasString(key) {
+  return key in STRINGS.en
 }
 
 export function pick(field) {

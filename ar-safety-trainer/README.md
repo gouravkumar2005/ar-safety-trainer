@@ -28,6 +28,7 @@ Only `src/platform/` knows which of the two it's running in (see
 | Export / audit report | File download | Android share sheet (save to Files, Drive, WhatsApp…) |
 | CPR hand tracking / pose | MediaPipe, bundled locally | Same |
 | Certificates / ledger | Web Crypto + IndexedDB | Same (Capacitor serves the app from `https://localhost`, a secure context) |
+| Accounts / login | Accounts server via `/api` (same origin, or `VITE_API_URL`) | Accounts server at `VITE_API_URL` from `.env.android`. It **must be https://** |
 
 ## Project structure
 
@@ -49,9 +50,11 @@ ar-safety-trainer/
       certificates/    QR certificate issue + verify
       admin/           compliance dashboard, aggregate stats, audit report
       grievance/       report-a-concern form
+      account/         login, registration, profile, admin account approval
     content/           training content shared by features (modules, items)
-    core/              app-wide logic: i18n/, state.js, ledger.js
-    shared/            reusable pieces: ui/ (confetti, sound), three/ (AR scene)
+    core/              app-wide logic: i18n/, state.js, ledger.js,
+                       session.js (who's logged in), api.js (server calls)
+    shared/            reusable pieces: ui/ (confetti, sound, escapeHtml), three/ (AR scene)
     platform/          web-vs-Android adapters: speech, voice input, files,
                        clipboard, AR launcher, ML asset paths, Android setup
     styles/            global CSS (feature CSS lives in its feature folder)
@@ -82,6 +85,36 @@ Import rules that keep it easy to follow:
 
 
 ## What's built
+
+- **Accounts, login and profiles** (`src/features/account/` + the
+  [accounts server](../server/README.md)). Registration asks for:
+  - role (Worker / Supervisor / Administrator)
+  - full name, work ID and mobile number
+  - employer, district (all 24 Jharkhand districts) and designation
+  - optional e-Shram UAN and preferred language
+  - a password (min. 8 characters, letters + digits)
+  - explicit consent to store the data
+
+  Login accepts a work ID **or** a mobile number. Everything needs a login
+  **except the 🚨 Emergency guides and certificate verification**, so
+  first aid is never behind a login screen. Supervisor/Admin sign-ups stay
+  *pending* until an admin approves them on **Profile → Manage accounts**,
+  so nobody can grant themselves elevated access. Admins can also disable
+  and re-enable accounts. Route access is declared per route
+  (`public` / `guestOnly` / `roles`) and enforced in
+  `src/app/router.js`; the server enforces it again on every API call.
+
+  Other details:
+  - **Offline**: the session is cached on the device (30 days by default),
+    so a worker who logged in above ground keeps training underground.
+    Profile edits need a connection.
+  - **Per-account results**: quiz results are stored per account, so two
+    workers sharing one phone never see or get certified on each other's
+    passes.
+  - **Certificates**: the name/work ID now come from the profile and are
+    read-only.
+  - **Language**: the app switches to the user's preferred language when
+    they log in.
 
 - **Module list** (`src/features/home/homeScreen.js`) — 6 modules: the PS's 5 domains
   plus a cross-cutting PPE Compliance module (see below). Two are wired to
@@ -289,8 +322,11 @@ Import rules that keep it easy to follow:
 ## Not built yet (offered, not selected this round — ask again anytime)
 
 Encrypted local storage for worker PII, certificate validity window +
-expiry, a consent/data-rights screen, role-based access for the admin
-dashboard, tamper-detection-before-sync, an offline asset-integrity check,
+expiry, a full data-rights screen (registration now has a consent
+checkbox, but no view/export/delete-my-data flow yet), syncing quiz results
+and certificates to the accounts server (accounts are central, training
+records are still per device), password reset (needs an SMS/OTP gateway),
+tamper-detection-before-sync, an offline asset-integrity check,
 a sync-queue design scaffold, photo-binding at certificate issuance, an
 always-reachable offline emergency-reference widget, and the optional
 public-blockchain testnet-anchoring stretch path (Polygon Amoy, would need
@@ -366,7 +402,28 @@ the MediaPipe runtime and downloads the hand/pose models into
 `public/mediapipe/` (gitignored). It needs internet once; later builds skip
 anything already there.
 
+### Accounts server
+
+Login needs the accounts server running (see [../server/README.md](../server/README.md)):
+
+```
+cd ../server
+npm install
+npm run create-admin -- --work-id ADMIN-001 --phone 9876543210 --name "Your Name" --org "Your Org" --district Ranchi --password "choose-one1"
+npm run dev
+```
+
+`npm run dev` and `npm run preview` here forward `/api` to it
+automatically. For a hosted website, set `VITE_API_URL` (see
+`.env.production.example`).
+
 ### Android APK
+
+Before building, copy `.env.android.example` to `.env.android` and set
+`VITE_API_URL` to the accounts server's **https://** address. The app runs
+on `https://localhost`, so it can't call a plain `http://` server. To test
+against a server on your PC, expose it through an HTTPS tunnel (e.g.
+`cloudflared tunnel --url http://localhost:8787`).
 
 You'll need:
 

@@ -15,6 +15,9 @@ India Hackathon problem statement **SIH26041** (Government of Jharkhand).
   tamper-evident certificate ledger (Web Crypto), offline-first service
   worker, Hindi/English voice narration, and more — see that folder's own
   README for the full breakdown of what's built and why.
+- **[`server/`](server/)** — the accounts API (registration, login,
+  profiles, admin approval of Supervisor/Admin accounts). Node + Express +
+  SQLite, with no separate database server to install.
 - **[`pitch-deck/`](pitch-deck/)** — generates the SIH submission `.pptx`
   from a single content file, so it can be regenerated any time the
   project changes rather than hand-edited in PowerPoint.

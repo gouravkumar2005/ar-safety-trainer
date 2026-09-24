@@ -1,6 +1,7 @@
 import { getModule } from '../../content/modules.js'
 import { t, pick } from '../../core/i18n/index.js'
-import { getResult, state, setWorker } from '../../core/state.js'
+import { getResult, state } from '../../core/state.js'
+import { escapeHtml } from '../../shared/ui/html.js'
 import { buildCertificatePayload, certificateToQrDataUrl } from './certificate.js'
 import { playCertChime } from '../../shared/ui/sound.js'
 import { copyText } from '../../platform/clipboard.js'
@@ -20,29 +21,30 @@ export function renderCertificate(main, navigate, params) {
       <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
       <h2 class="h2-title" style="margin:12px 0 16px;">${t('getCertificate')}</h2>
 
+      <!-- Name and work ID come from the logged-in account (edit them on
+           the profile screen), so a certificate can't be issued under
+           someone else's identity from this form. -->
       <div class="field">
         <label for="worker-name">${t('workerName')}</label>
-        <input id="worker-name" type="text" value="${state.worker.name}" placeholder="e.g. Sunita Murmu" />
+        <input id="worker-name" type="text" value="${escapeHtml(state.worker.name)}" readonly />
       </div>
       <div class="field">
         <label for="worker-id">${t('workerId')}</label>
-        <input id="worker-id" type="text" value="${state.worker.id}" placeholder="e.g. JH-MINE-00214" />
+        <input id="worker-id" type="text" value="${escapeHtml(state.worker.id)}" readonly />
       </div>
       <div class="field">
         <label for="worker-uan">${t('workerUan')}</label>
-        <input id="worker-uan" type="text" value="${state.worker.uan || ''}" placeholder="e.g. 12-3456-7890-1234" />
+        <input id="worker-uan" type="text" value="${escapeHtml(state.worker.uan)}" readonly />
         <p class="hint" style="text-align:left;margin-top:4px;">${t('uanFieldHint')}</p>
       </div>
+      <p class="field-hint" style="margin:-4px 0 14px;">${t('certFromProfileNote')}</p>
 
       <button class="btn btn-accent btn-block" id="gen-btn">${t('generateCert')}</button>
     `
     main.querySelector('#back').addEventListener('click', () => navigate(`#/module/${mod.id}/result`))
     main.querySelector('#gen-btn').addEventListener('click', async () => {
-      const name = main.querySelector('#worker-name').value.trim()
-      const id = main.querySelector('#worker-id').value.trim()
-      const uan = main.querySelector('#worker-uan').value.trim()
+      const { name, id, uan } = state.worker
       if (!name || !id) return
-      setWorker(name, id, uan)
       await renderCert(name, id, uan)
     })
   }
@@ -67,7 +69,7 @@ export function renderCertificate(main, navigate, params) {
       <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
       <div class="cert-card" style="margin-top:14px;">
         <div class="cert-label">${t('certTitle')}</div>
-        <div class="cert-value cert-value-lg">${name}</div>
+        <div class="cert-value cert-value-lg">${escapeHtml(name)}</div>
 
         <img src="${qrUrl}" width="180" height="180" alt="${t('certScanNote')}" />
 
@@ -79,7 +81,7 @@ export function renderCertificate(main, navigate, params) {
 
         ${fields.uan ? `
           <div class="cert-label">${t('certUanLabel')}</div>
-          <div class="cert-value">${fields.uan}</div>
+          <div class="cert-value">${escapeHtml(fields.uan)}</div>
           <p class="hint">${t('certUanNote')}</p>
         ` : ''}
 

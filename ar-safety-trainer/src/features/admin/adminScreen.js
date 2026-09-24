@@ -1,5 +1,5 @@
 import { t, pick } from '../../core/i18n/index.js'
-import { state } from '../../core/state.js'
+import { state, getAllResults } from '../../core/state.js'
 import { getModule } from '../../content/modules.js'
 import * as ledger from '../../core/ledger.js'
 import * as aggregate from './aggregate.js'
@@ -73,7 +73,7 @@ export function renderAdmin(main, navigate) {
       const bundle = {
         ...ledgerExport,
         worker: state.worker,
-        results: state.results,
+        results: getAllResults(),
       }
       const idPart = (state.worker.id || 'worker').replace(/[^a-zA-Z0-9-]/g, '_')
       await saveTextFile(JSON.stringify(bundle, null, 2), `ar-safety-trainer-export-${idPart}.json`, 'application/json')

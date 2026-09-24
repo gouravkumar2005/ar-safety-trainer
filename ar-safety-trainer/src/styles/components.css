@@ -117,7 +117,8 @@ textarea.ta {
 
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
-.field input {
+.field input,
+.field select {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
@@ -126,6 +127,29 @@ textarea.ta {
   color: var(--text);
   font-size: 0.9375rem;
 }
+.field input[readonly] { opacity: 0.75; }
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"] { border-color: var(--bad); }
+.field-hint { font-size: 0.75rem; color: var(--text-dim); margin: 4px 0 0; }
+/* Error text is shown with an icon, not colour alone (WCAG 1.4.1). */
+.field-error { font-size: 0.75rem; color: var(--bad); margin: 4px 0 0; }
+.field-error:empty { display: none; }
+.field-error::before { content: '⚠ '; }
+/* .field .field-check outranks ".field label { display: block }". */
+.field .field-check, .field-check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.8125rem; line-height: 1.45; }
+.field-check input { width: 20px; height: 20px; flex: none; margin-top: 1px; }
+/* A message for the whole form (e.g. "can't reach the server"). */
+.form-alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin-bottom: 14px;
+  border: 1px solid var(--bad);
+  background: rgba(239,68,68,0.08);
+}
+.form-alert.form-alert-ok { border-color: var(--good); background: rgba(47,191,113,0.08); }
+.form-alert:empty { display: none; }
 
 .note {
   font-size: 0.71875rem;

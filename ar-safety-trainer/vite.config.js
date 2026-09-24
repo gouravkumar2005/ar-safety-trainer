@@ -61,12 +61,21 @@ function pwaPlugin() {
   })
 }
 
+// In development, /api/* is forwarded to the accounts server running
+// locally (cd ../server && npm run dev), so the app can call it on its own
+// origin with no CORS or mixed-content issues.
+const API_PROXY = { '/api': 'http://localhost:8787' }
+
 export default defineConfig(({ mode }) => {
   const isAndroid = mode === 'android'
   return {
     server: {
       host: true,
       port: 5173,
+      proxy: API_PROXY,
+    },
+    preview: {
+      proxy: API_PROXY,
     },
     plugins: isAndroid ? [] : [basicSsl(), pwaPlugin()],
   }

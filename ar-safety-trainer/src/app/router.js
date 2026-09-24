@@ -1,10 +1,17 @@
 // Tiny hash router. URLs look like #/module/ppe-compliance/quiz.
 // Route patterns ("/module/:id/quiz") live in each feature's index.js; this
-// file only matches the current hash against them and renders the winner.
+// file matches the current hash against them, checks access, and renders
+// the winner.
+//
+// Access flags a route can set (default: any logged-in user):
+//   public: true      reachable without logging in (emergency, verify)
+//   guestOnly: true   only when logged out (login, register)
+//   roles: [...]      only these roles (e.g. ['admin'])
 
 import { PPE_GATE_ENABLED } from '../config.js'
 import { PPE_GATE_MODULE_ID, EMERGENCY_RESPONSE_MODULE_ID } from '../content/modules.js'
 import { getResult } from '../core/state.js'
+import { isLoggedIn, hasRole, rememberReturnPath, onSessionChange } from '../core/session.js'
 import { routes, fallbackRoute } from './routes.js'
 
 let mainEl = null
@@ -40,6 +47,14 @@ function resolve(path) {
   return { route: fallbackRoute, params: {} }
 }
 
+// Where to send the user instead, if they may not see this route.
+function accessRedirect(route) {
+  if (route.guestOnly && isLoggedIn()) return '#/'
+  if (!route.public && !route.guestOnly && !isLoggedIn()) return '#/login'
+  if (route.roles && !hasRole(...route.roles)) return '#/'
+  return null
+}
+
 // Emergency Response is exempt from the gate on purpose, gate-enabled or
 // not — the topbar's 🚨 button promises one-tap access from anywhere, and
 // blocking real first-aid help behind an unrelated induction quiz would be
@@ -50,13 +65,23 @@ function isBlockedByPpeGate(params) {
   return !getResult(PPE_GATE_MODULE_ID)?.passed
 }
 
-// Renders whatever screen the current hash points at.
-export function render() {
-  const { route, params } = resolve(currentPath())
+// Renders whatever screen the current hash points at. After a logout the
+// current page is NOT remembered for "return after login": on a shared
+// phone, the next person to log in should start at home, not on the
+// previous user's page.
+export function render({ afterLogout = false } = {}) {
+  const path = currentPath()
+  const { route, params } = resolve(path)
 
   // A redirect (no visible frame of its own) shouldn't get wrapped in a
   // transition — that would animate nothing and just add latency before
   // the real destination renders.
+  const redirect = accessRedirect(route)
+  if (redirect) {
+    if (redirect === '#/login' && !afterLogout) rememberReturnPath(`#${path}`)
+    navigate(redirect)
+    return
+  }
   if (isBlockedByPpeGate(params)) {
     navigate(`#/module/${PPE_GATE_MODULE_ID}`)
     return
@@ -77,12 +102,19 @@ export function render() {
   // Progressive enhancement — document.startViewTransition simply doesn't
   // exist on unsupported browsers, so they just get the old instant swap,
   // never a broken half-state.
-  if (document.startViewTransition) document.startViewTransition(renderScreen)
+  // (A transition that's interrupted by the next navigation rejects its
+  // promise; that's expected, so it's ignored rather than logged.)
+  if (document.startViewTransition) document.startViewTransition(renderScreen).ready.catch(() => {})
   else renderScreen()
 }
 
 export function startRouter(main) {
   mainEl = main
-  window.addEventListener('hashchange', render)
+  window.addEventListener('hashchange', () => render())
+  // Logged out (by the user, or because the server ended the session):
+  // re-check the current screen, which sends the user to the login page.
+  onSessionChange((user) => {
+    if (!user) render({ afterLogout: true })
+  })
   render()
 }

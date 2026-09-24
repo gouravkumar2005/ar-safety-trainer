@@ -1,10 +1,11 @@
 // The persistent app chrome: top bar with brand, 🚨 emergency shortcut,
-// text size, sound, verify and language buttons. Returns the <main>
-// element that screens render into.
+// text size, sound, verify, language and (when logged in) profile buttons.
+// Returns the <main> element that screens render into.
 
 import { t, toggleLang, getLang } from '../core/i18n/index.js'
 import { isMuted, toggleMuted } from '../shared/ui/sound.js'
 import { EMERGENCY_RESPONSE_MODULE_ID } from '../content/modules.js'
+import { isLoggedIn, onSessionChange } from '../core/session.js'
 import { navigate, render } from './router.js'
 
 // Text-size control: cycles base -> lg -> xl -> base, persisted the same
@@ -26,6 +27,7 @@ export function mountShell(app) {
         <button class="btn" id="sound-btn" title="Sound"></button>
         <button class="btn" id="verify-nav-btn"></button>
         <button class="btn" id="lang-btn"></button>
+        <button class="btn" id="profile-btn" title="Profile">👤</button>
       </div>
     </header>
     <main id="main"></main>
@@ -52,6 +54,8 @@ export function mountShell(app) {
     $('#verify-nav-btn').textContent = t('verify')
     $('#text-size-btn').setAttribute('aria-label', t('textSizeBtn'))
     $('#emergency-nav-btn').setAttribute('aria-label', t('emergencyQuickAccessBtn'))
+    $('#profile-btn').setAttribute('aria-label', t('profileNavBtn'))
+    $('#profile-btn').hidden = !isLoggedIn()
     paintSoundBtn()
   }
 
@@ -61,6 +65,7 @@ export function mountShell(app) {
     render() // re-render the current screen in the new language
   })
   $('#verify-nav-btn').addEventListener('click', () => navigate('#/verify'))
+  $('#profile-btn').addEventListener('click', () => navigate('#/profile'))
   // Always reachable in one tap, from any screen — the whole point is not
   // making someone hunt through the home screen's module list mid-accident.
   $('#emergency-nav-btn').addEventListener('click', () => navigate(`#/module/${EMERGENCY_RESPONSE_MODULE_ID}`))
@@ -73,6 +78,9 @@ export function mountShell(app) {
     toggleMuted()
     paintSoundBtn()
   })
+
+  // Log in/out, or a language change from the profile: repaint the bar.
+  onSessionChange(paint)
 
   applyTextSize()
   paint()

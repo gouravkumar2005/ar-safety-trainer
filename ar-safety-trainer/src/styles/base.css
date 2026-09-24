@@ -32,6 +32,10 @@ html.text-xl { font-size: 137.5%; }
 
 * { box-sizing: border-box; }
 
+/* Classes like .btn set display, which would otherwise override the
+   hidden attribute and keep "hidden" elements on screen. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;

@@ -3,6 +3,7 @@ import { modules } from '../../content/modules.js'
 import { grievanceCategories } from './grievanceCategories.js'
 import { state } from '../../core/state.js'
 import * as ledger from '../../core/ledger.js'
+import { escapeHtml } from '../../shared/ui/html.js'
 
 // CPGRAMS-style "report a concern" channel — identity fields are all
 // optional by design (forcing a name/ID on a hazard report risks
@@ -42,11 +43,11 @@ export function renderGrievance(main, navigate) {
 
     <div class="field">
       <label for="grv-name">${t('workerName')}</label>
-      <input id="grv-name" type="text" value="${state.worker.name}" />
+      <input id="grv-name" type="text" value="${escapeHtml(state.worker.name)}" />
     </div>
     <div class="field">
       <label for="grv-id">${t('workerId')}</label>
-      <input id="grv-id" type="text" value="${state.worker.id}" />
+      <input id="grv-id" type="text" value="${escapeHtml(state.worker.id)}" />
     </div>
     <div class="field">
       <label for="grv-contact">${t('grievanceContactLabel')}</label>
