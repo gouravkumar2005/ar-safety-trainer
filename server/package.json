@@ -1,0 +1,20 @@
+{
+  "name": "ar-safety-trainer-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Accounts & profiles API for AR Safety Trainer (SIH26041)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.js",
+    "dev": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --watch src/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\"",
+    "create-admin": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning scripts/create-admin.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  }
+}

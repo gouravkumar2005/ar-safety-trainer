@@ -1,0 +1,4 @@
+node_modules
+# SQLite database (real user data, never commit)
+data/
+.env
