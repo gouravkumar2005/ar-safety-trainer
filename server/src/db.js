@@ -9,7 +9,6 @@
 //   await db.close()
 
 import pg from 'pg'
-import { PGlite } from '@electric-sql/pglite'
 import { mkdirSync } from 'node:fs'
 
 const SCHEMA = `
@@ -52,7 +51,10 @@ function connectPostgres(databaseUrl) {
   }
 }
 
-function connectPglite(dataDir) {
+// Loaded only when needed, so production (which uses DATABASE_URL) never
+// pays PGlite's start-up cost.
+async function connectPglite(dataDir) {
+  const { PGlite } = await import('@electric-sql/pglite')
   if (dataDir) mkdirSync(dataDir, { recursive: true })
   const lite = new PGlite(dataDir || undefined) // no dir = in memory
   return {
@@ -64,7 +66,7 @@ function connectPglite(dataDir) {
 
 // { databaseUrl } for Postgres, else { dataDir } (or neither: in memory).
 export async function openDb({ databaseUrl, dataDir }) {
-  const db = databaseUrl ? connectPostgres(databaseUrl) : connectPglite(dataDir)
+  const db = databaseUrl ? connectPostgres(databaseUrl) : await connectPglite(dataDir)
   await db.exec(SCHEMA)
   return db
 }

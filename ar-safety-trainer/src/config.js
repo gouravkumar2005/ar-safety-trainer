@@ -6,21 +6,19 @@
 // a model from here — see platform/arLauncher.js.
 export const PUBLIC_SITE_URL = 'https://ar-safety-trainer.vercel.app'
 
-// Accounts & login (features/account + ../server). OFF until the accounts
-// server is hosted (see ../server/README.md): the website and the app then
-// work without login, exactly like before accounts existed. Switch to
-// true once PRODUCTION_API_URL below is live — login, profiles and
-// per-account results turn on everywhere with that one change.
-export const ACCOUNTS_ENABLED = false
+// Accounts & login (features/account + ../server). Set to false to run the
+// website and the app without login, exactly like before accounts existed
+// (e.g. if the accounts server is ever down for a long time).
+export const ACCOUNTS_ENABLED = true
 
-// The accounts server (see ../server and ../render.yaml). ONE address for
-// both the website and the Android app, so they always share the same
-// accounts:
+// The accounts server (see ../server; hosted on Vercel, data in Neon).
+// ONE address for both the website and the Android app, so they always
+// share the same accounts:
 //   - `npm run dev`: same origin; Vite forwards /api to the local server.
 //   - any build (website on Vercel, APK): PRODUCTION_API_URL.
 // Override with VITE_API_URL (set it empty to test a build against a local
 // server with `vite preview`).
-const PRODUCTION_API_URL = 'https://ar-safety-trainer-api.onrender.com'
+const PRODUCTION_API_URL = 'https://ar-safety-trainer-api.vercel.app'
 const configuredApiUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : PRODUCTION_API_URL)
 export const API_BASE_URL = configuredApiUrl.replace(/\/$/, '')
 

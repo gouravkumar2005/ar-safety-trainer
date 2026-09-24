@@ -85,7 +85,7 @@ Logged-in requests send `Authorization: Bearer <token>`.
 
 ```
 src/
-  index.js             starts the server
+  index.js             starts the server (local / any normal host)
   app.js               builds the Express app (the tests use this directly)
   config.js            settings from environment variables
   db.js                Postgres connection (pg, or PGlite locally) + tables
@@ -93,37 +93,44 @@ src/
   auth/                passwords (scrypt), sessions, login rate limiter, middleware
   users/               validation rules, SQL for the users table
   routes/              authRoutes, profileRoutes, adminRoutes
+api/index.js           Vercel serverless entry (same app, no listen())
 scripts/create-admin.js
 test/api.test.js
 ```
 
 ## Deploying
 
-### Free: Render + Neon
+### Current setup: Vercel + Neon (free)
 
-Render's free plan wipes the disk on every restart, so the data goes to
-Neon's free Postgres (0.5 GB, doesn't expire).
+- **Server** runs as a Vercel serverless function (`api/index.js` wraps the
+  same Express app; `vercel.json` sends every path to it). Project:
+  `ar-safety-trainer-api`, address **https://ar-safety-trainer-api.vercel.app**.
+- **Data** is in a free Neon Postgres database, created from Vercel
+  (Storage → Neon, region Singapore). It's permanent and doesn't expire.
+- The environment variables are set in the Vercel project (Settings →
+  Environment Variables): `DATABASE_URL` (the Neon connection string),
+  `CORS_ORIGINS=https://ar-safety-trainer.vercel.app`, `TRUST_PROXY=1`.
 
-1. **Neon**: sign up at [neon.tech](https://neon.tech) and create a project
-   (region: *Asia Pacific (Singapore)*). Copy the **pooled** connection
-   string (`postgresql://...?sslmode=require`).
-2. **Render**: sign up at [render.com](https://render.com) with GitHub.
-   Choose **New → Blueprint**, pick this repo, and paste the Neon string as
-   `DATABASE_URL` when asked. [`../render.yaml`](../render.yaml) sets up
-   everything else, and every push to `master` redeploys the server.
-3. **First admin**: on your PC, run the command below. It writes straight
-   to Neon.
-   ```
-   DATABASE_URL="postgresql://...neon.tech/...?sslmode=require" npm run create-admin -- --work-id ... (same flags as above)
-   ```
-4. Check the service's address on Render. If it isn't
-   `https://ar-safety-trainer-api.onrender.com` (Render adds a suffix
-   when a name is taken), update `PRODUCTION_API_URL` in
-   `ar-safety-trainer/src/config.js`.
+To deploy a change to the server (from this folder, logged in with
+`npx vercel login`):
 
-Free Render services sleep after 15 minutes without traffic. The first
-request after that takes about a minute while it wakes up. No data is lost,
-because the data is in Neon.
+```
+npx vercel deploy --prod
+```
+
+To create an admin in the live database, run `create-admin` on your PC
+with the Neon string:
+
+```
+DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=verify-full" npm run create-admin -- --work-id ... (same flags as above)
+```
+
+The login rate limiter keeps its counts in memory. On serverless, each
+running instance has its own count, so it's a little looser than on a
+single server, but still limits guessing.
+
+If the address ever changes, update `PRODUCTION_API_URL` in
+`ar-safety-trainer/src/config.js`. The website and the APK both read it.
 
 ### Long term: NIC / MeitY cloud
 
@@ -133,6 +140,3 @@ behind HTTPS, with a Postgres database, `DATABASE_URL` set,
 `CORS_ORIGINS` set to the website's address, and `TRUST_PROXY=1` behind
 a proxy.
 
-If the server's address changes, update `PRODUCTION_API_URL` in
-`ar-safety-trainer/src/config.js`. The website and the APK both read it.
-The address must be **https://**.

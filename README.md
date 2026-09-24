@@ -17,8 +17,8 @@ India Hackathon problem statement **SIH26041** (Government of Jharkhand).
   README for the full breakdown of what's built and why.
 - **[`server/`](server/)** — the accounts API (registration, login,
   profiles, admin approval of Supervisor/Admin accounts). Node + Express +
-  PostgreSQL (hosted free on Render + Neon; a built-in Postgres locally).
-  [`render.yaml`](render.yaml) deploys it.
+  PostgreSQL. Live at https://ar-safety-trainer-api.vercel.app, with
+  data in a free Neon database; a built-in Postgres is used locally.
 - **[`pitch-deck/`](pitch-deck/)** — generates the SIH submission `.pptx`
   from a single content file, so it can be regenerated any time the
   project changes rather than hand-edited in PowerPoint.

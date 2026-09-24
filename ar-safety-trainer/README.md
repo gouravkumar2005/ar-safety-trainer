@@ -87,11 +87,9 @@ Import rules that keep it easy to follow:
 ## What's built
 
 - **Accounts, login and profiles** (`src/features/account/` + the
-  [accounts server](../server/README.md)). **Currently switched OFF**
-  (`ACCOUNTS_ENABLED` in `src/config.js`) until the server is hosted.
-  While it's off, the website and app work without login, exactly as they
-  did before accounts existed. Set it to `true` once the Render + Neon
-  server is live, and everything below turns on for both. Registration asks for:
+  [accounts server](../server/README.md)). It's on by default. Set
+  `ACCOUNTS_ENABLED` in `src/config.js` to `false` to run the website
+  and app without login, exactly as before accounts existed. Registration asks for:
   - role (Worker / Supervisor / Administrator)
   - full name, work ID and mobile number
   - employer, district (all 24 Jharkhand districts) and designation
@@ -421,8 +419,8 @@ npm run dev
 
 **One server for the website and the app.** Every build (the Vercel website
 and the APK) talks to `PRODUCTION_API_URL` in `src/config.js`: the free
-Render + Neon server described in
-[../server/README.md](../server/README.md#free-render--neon). If that
+Vercel + Neon server described in
+[../server/README.md](../server/README.md#current-setup-vercel--neon-free). If that
 address ever changes, update it there once; both builds pick it up. To try
 a production build against your local server instead, run
 `VITE_API_URL= npm run build && npm run preview`.
@@ -432,8 +430,9 @@ a production build against your local server instead, run
 Both come from the same `src/`, so every change lands in both. How it
 reaches users differs:
 
-- **Website**: push to `master` and Vercel redeploys it.
-- **Server**: push to `master` and Render redeploys it (see `render.yaml`).
+- **Website**: run `npx vercel deploy --prod` in this folder (or connect the
+  Vercel project to GitHub, and every push to `master` redeploys it).
+- **Server**: run `npx vercel deploy --prod` in `server/`.
 - **APK**: rebuild with `npm run apk:release` and reinstall it on phones.
 
 ### Android APK

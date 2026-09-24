@@ -1,4 +1,7 @@
 node_modules
-# SQLite database (real user data, never commit)
+# Local database (real user data, never commit)
 data/
-.env
+# Secrets: database connection strings, Vercel link
+.env*
+!.env.example
+.vercel
