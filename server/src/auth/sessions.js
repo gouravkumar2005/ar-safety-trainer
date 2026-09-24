@@ -8,48 +8,41 @@ import { createHash, randomBytes } from 'node:crypto'
 const hashToken = (token) => createHash('sha256').update(token).digest('hex')
 
 export function createSessionStore(db, { ttlMs }) {
-  const insert = db.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-  const find = db.prepare('SELECT user_id, expires_at FROM sessions WHERE token_hash = ?')
-  const remove = db.prepare('DELETE FROM sessions WHERE token_hash = ?')
-  const removeForUser = db.prepare('DELETE FROM sessions WHERE user_id = ?')
-  const removeOthersForUser = db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?')
-  const removeExpired = db.prepare('DELETE FROM sessions WHERE expires_at < ?')
-
   return {
     // Returns { token, expiresAt }. The token itself is never stored.
-    create(userId) {
+    async create(userId) {
       const token = randomBytes(32).toString('base64url')
-      const now = new Date()
-      const expiresAt = new Date(now.getTime() + ttlMs).toISOString()
-      insert.run(hashToken(token), userId, now.toISOString(), expiresAt)
+      const expiresAt = new Date(Date.now() + ttlMs).toISOString()
+      await db.query(
+        'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+        [hashToken(token), userId, expiresAt],
+      )
       return { token, expiresAt }
     },
 
     // The user id for a valid, unexpired token, or null.
-    userIdFor(token) {
-      const row = find.get(hashToken(token))
-      if (!row) return null
-      if (row.expires_at < new Date().toISOString()) {
-        remove.run(hashToken(token))
-        return null
-      }
-      return row.user_id
+    async userIdFor(token) {
+      const [row] = await db.query(
+        'SELECT user_id FROM sessions WHERE token_hash = $1 AND expires_at > now()',
+        [hashToken(token)],
+      )
+      return row?.user_id ?? null
     },
 
-    revoke(token) {
-      remove.run(hashToken(token))
+    async revoke(token) {
+      await db.query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)])
     },
 
-    revokeAllForUser(userId) {
-      removeForUser.run(userId)
+    async revokeAllForUser(userId) {
+      await db.query('DELETE FROM sessions WHERE user_id = $1', [userId])
     },
 
-    revokeOthersForUser(userId, keepToken) {
-      removeOthersForUser.run(userId, hashToken(keepToken))
+    async revokeOthersForUser(userId, keepToken) {
+      await db.query('DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2', [userId, hashToken(keepToken)])
     },
 
-    purgeExpired() {
-      removeExpired.run(new Date().toISOString())
+    async purgeExpired() {
+      await db.query('DELETE FROM sessions WHERE expires_at <= now()')
     },
   }
 }

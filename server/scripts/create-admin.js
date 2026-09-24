@@ -1,6 +1,8 @@
 // Creates an active Admin account from the command line. Admin sign-ups
 // through the app need approval from an existing admin, so the very first
-// admin has to be created this way:
+// admin has to be created this way. It writes to the same database the
+// server uses: DATABASE_URL if set (e.g. your Neon database), else the
+// local built-in one.
 //
 //   npm run create-admin -- --work-id ADMIN-001 --phone 9876543210 \
 //     --name "Asha Kumari" --org "DGMS Ranchi" --district Ranchi --password "S3cure-pass"
@@ -38,10 +40,13 @@ if (errors) {
   process.exit(1)
 }
 
-const users = createUserRepo(openDb(config.dbPath))
-if (users.findByWorkId(value.workId) || users.findByPhone(value.phone)) {
+const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: config.dataDir })
+const users = createUserRepo(db)
+if ((await users.findByWorkId(value.workId)) || (await users.findByPhone(value.phone))) {
   console.error('A user with that work ID or phone already exists.')
-  process.exit(1)
+  process.exitCode = 1
+} else {
+  const admin = await users.create(value, await hashPassword(value.password), 'active')
+  console.log(`Admin created: ${admin.work_id} (id ${admin.id})`)
 }
-const admin = users.create(value, await hashPassword(value.password), 'active')
-console.log(`Admin created: ${admin.work_id} (id ${admin.id})`)
+await db.close()

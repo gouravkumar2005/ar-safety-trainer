@@ -1,5 +1,6 @@
 // Builds the Express app. Kept separate from index.js (which only starts
 // listening) so the tests can create an app with an in-memory database.
+// Async because it connects to the database first.
 
 import express from 'express'
 import cors from 'cors'
@@ -13,8 +14,8 @@ import { authRoutes } from './routes/authRoutes.js'
 import { profileRoutes } from './routes/profileRoutes.js'
 import { adminRoutes } from './routes/adminRoutes.js'
 
-export function createApp(config) {
-  const db = openDb(config.dbPath)
+export async function createApp(config) {
+  const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: config.dataDir })
   const users = createUserRepo(db)
   const sessions = createSessionStore(db, { ttlMs: config.sessionTtlMs })
   const limiter = createLoginLimiter({ maxFailures: config.loginMaxFailures, windowMs: config.loginWindowMs })

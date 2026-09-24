@@ -5,8 +5,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const config = {
   port: Number(process.env.PORT) || 8787,
 
-  // SQLite file. ':memory:' is used by the tests.
-  dbPath: process.env.DB_PATH || 'data/ar-safety-trainer.db',
+  // Production: a Postgres connection string (e.g. from neon.tech).
+  // Leave it unset locally to use a built-in Postgres stored in dataDir.
+  databaseUrl: process.env.DATABASE_URL || '',
+  dataDir: process.env.DATA_DIR || 'data/pglite',
 
   // Web origins allowed to call the API from a browser. The Android app's
   // WebView runs on https://localhost (Capacitor), so that's always allowed.

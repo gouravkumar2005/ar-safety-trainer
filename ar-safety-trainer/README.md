@@ -28,7 +28,7 @@ Only `src/platform/` knows which of the two it's running in (see
 | Export / audit report | File download | Android share sheet (save to Files, Drive, WhatsApp…) |
 | CPR hand tracking / pose | MediaPipe, bundled locally | Same |
 | Certificates / ledger | Web Crypto + IndexedDB | Same (Capacitor serves the app from `https://localhost`, a secure context) |
-| Accounts / login | Accounts server via `/api` (same origin, or `VITE_API_URL`) | Accounts server at `VITE_API_URL` from `.env.android`. It **must be https://** |
+| Accounts / login | Same accounts server (`PRODUCTION_API_URL` in `src/config.js`) | Same server, so one account works on both |
 
 ## Project structure
 
@@ -413,17 +413,26 @@ npm run create-admin -- --work-id ADMIN-001 --phone 9876543210 --name "Your Name
 npm run dev
 ```
 
-`npm run dev` and `npm run preview` here forward `/api` to it
-automatically. For a hosted website, set `VITE_API_URL` (see
-`.env.production.example`).
+`npm run dev` forwards `/api` to it automatically.
+
+**One server for the website and the app.** Every build (the Vercel website
+and the APK) talks to `PRODUCTION_API_URL` in `src/config.js`: the free
+Render + Neon server described in
+[../server/README.md](../server/README.md#free-render--neon). If that
+address ever changes, update it there once; both builds pick it up. To try
+a production build against your local server instead, run
+`VITE_API_URL= npm run build && npm run preview`.
+
+### Keeping the website and the APK in step
+
+Both come from the same `src/`, so every change lands in both. How it
+reaches users differs:
+
+- **Website**: push to `master` and Vercel redeploys it.
+- **Server**: push to `master` and Render redeploys it (see `render.yaml`).
+- **APK**: rebuild with `npm run apk:release` and reinstall it on phones.
 
 ### Android APK
-
-Before building, copy `.env.android.example` to `.env.android` and set
-`VITE_API_URL` to the accounts server's **https://** address. The app runs
-on `https://localhost`, so it can't call a plain `http://` server. To test
-against a server on your PC, expose it through an HTTPS tunnel (e.g.
-`cloudflared tunnel --url http://localhost:8787`).
 
 You'll need:
 

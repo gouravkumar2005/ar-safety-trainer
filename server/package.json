@@ -5,16 +5,18 @@
   "description": "Accounts & profiles API for AR Safety Trainer (SIH26041)",
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.9"
   },
   "scripts": {
-    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.js",
-    "dev": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --watch src/index.js",
-    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\"",
-    "create-admin": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning scripts/create-admin.js"
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "dev": "node --env-file-if-exists=.env --watch src/index.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "create-admin": "node --env-file-if-exists=.env scripts/create-admin.js"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "cors": "^2.8.5",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
   }
 }

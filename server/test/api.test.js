@@ -1,5 +1,6 @@
-// End-to-end tests for the accounts API, against an in-memory database.
-// Run: npm test
+// End-to-end tests for the accounts API, against an in-memory Postgres
+// (PGlite) — the same SQL that runs on the production database.
+// Run: npm test   (or TEST_DATABASE_URL=postgres://... npm test for a real server)
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -11,8 +12,9 @@ let base
 let ctx
 
 before(async () => {
-  ctx = createApp({
-    dbPath: ':memory:',
+  ctx = await createApp({
+    databaseUrl: process.env.TEST_DATABASE_URL || '', // set to test against a real Postgres
+    dataDir: '',
     corsOrigins: [],
     sessionTtlMs: 60_000,
     loginMaxFailures: 3,
@@ -23,7 +25,10 @@ before(async () => {
   base = `http://localhost:${server.address().port}/api`
 })
 
-after(() => server.close())
+after(async () => {
+  server.close()
+  await ctx.db.close()
+})
 
 async function call(method, path, body, token) {
   const res = await fetch(base + path, {
@@ -53,7 +58,7 @@ const worker = {
 }
 
 async function createActiveAdmin(workId, phone) {
-  const admin = ctx.users.create(
+  const admin = await ctx.users.create(
     { ...worker, role: 'admin', workId, phone, fullName: 'Admin' },
     await hashPassword('admin-pass-1'),
     'active',

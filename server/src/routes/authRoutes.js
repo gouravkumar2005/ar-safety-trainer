@@ -24,6 +24,11 @@ const BLOCKED_STATUS = {
   disabled: 'Your account has been disabled',
 }
 
+// Which field a Postgres unique-constraint error (code 23505) was about.
+function uniqueViolationFields(err) {
+  return /phone/.test(err.constraint || err.detail || '') ? { phone: 'taken' } : { workId: 'taken' }
+}
+
 export function authRoutes({ users, sessions, limiter, requireAuth }) {
   const router = Router()
 
@@ -36,15 +41,23 @@ export function authRoutes({ users, sessions, limiter, requireAuth }) {
     if (errors) throw new HttpError(400, 'validation', 'Please correct the highlighted fields', errors)
 
     const taken = {}
-    if (users.findByWorkId(value.workId)) taken.workId = 'taken'
-    if (users.findByPhone(value.phone)) taken.phone = 'taken'
+    if (await users.findByWorkId(value.workId)) taken.workId = 'taken'
+    if (await users.findByPhone(value.phone)) taken.phone = 'taken'
     if (Object.keys(taken).length) throw new HttpError(409, 'validation', 'Already registered', taken)
 
     const status = value.role === 'worker' ? 'active' : 'pending'
-    const user = users.create(value, await hashPassword(value.password), status)
+    let user
+    try {
+      user = await users.create(value, await hashPassword(value.password), status)
+    } catch (err) {
+      // Two sign-ups with the same work ID/phone at the same moment: the
+      // database's UNIQUE constraint catches the one the check above missed.
+      if (err.code === '23505') throw new HttpError(409, 'validation', 'Already registered', uniqueViolationFields(err))
+      throw err
+    }
 
     if (status === 'active') {
-      res.status(201).json({ user: toPublicUser(user), ...sessions.create(user.id) })
+      res.status(201).json({ user: toPublicUser(user), ...(await sessions.create(user.id)) })
     } else {
       res.status(201).json({ user: toPublicUser(user), pendingApproval: true })
     }
@@ -65,7 +78,7 @@ export function authRoutes({ users, sessions, limiter, requireAuth }) {
       throw new HttpError(429, 'too_many_attempts', 'Too many failed attempts. Try again in 15 minutes')
     }
 
-    const user = users.findByWorkId(normalizeWorkId(identifier)) || users.findByPhone(normalizePhone(identifier))
+    const user = (await users.findByWorkId(normalizeWorkId(identifier))) || (await users.findByPhone(normalizePhone(identifier)))
     // Always run one hash comparison, so an unknown work ID takes as long as
     // a wrong password and the timing doesn't reveal which accounts exist.
     const passwordOk = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH)
@@ -78,11 +91,11 @@ export function authRoutes({ users, sessions, limiter, requireAuth }) {
     if (user.status !== 'active') {
       throw new HttpError(403, `account_${user.status}`, BLOCKED_STATUS[user.status])
     }
-    res.json({ user: toPublicUser(user), ...sessions.create(user.id) })
+    res.json({ user: toPublicUser(user), ...(await sessions.create(user.id)) })
   })
 
-  router.post('/logout', requireAuth, (req, res) => {
-    sessions.revoke(req.sessionToken)
+  router.post('/logout', requireAuth, async (req, res) => {
+    await sessions.revoke(req.sessionToken)
     res.status(204).end()
   })
 

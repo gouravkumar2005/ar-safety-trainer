@@ -1,0 +1,25 @@
+# Render Blueprint for the accounts server (server/).
+# render.com -> New -> Blueprint -> pick this GitHub repo. Render reads this
+# file, creates the service, and redeploys it on every push to master.
+# Data lives in a free Neon Postgres database (Render's free disk is wiped
+# on every restart, so SQLite/local files can't be used there).
+services:
+  - type: web
+    name: ar-safety-trainer-api
+    runtime: node
+    plan: free
+    region: singapore        # closest Render region to India
+    rootDir: server
+    branch: master
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL    # paste your Neon connection string when asked
+        sync: false
+      - key: CORS_ORIGINS    # the website's address
+        value: https://ar-safety-trainer.vercel.app
+      - key: TRUST_PROXY     # Render sits behind one proxy
+        value: "1"
+      - key: NODE_ENV
+        value: production

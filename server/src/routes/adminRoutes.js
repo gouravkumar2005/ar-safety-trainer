@@ -18,26 +18,27 @@ export function adminRoutes({ users, sessions, requireAuth, requireRole }) {
   const router = Router()
   router.use(requireAuth, requireRole('admin'))
 
-  router.get('/users', (req, res) => {
+  router.get('/users', async (req, res) => {
     const status = STATUSES.includes(req.query.status) ? req.query.status : undefined
     const role = ROLES.includes(req.query.role) ? req.query.role : undefined
-    res.json({ users: users.list({ status, role }).map(toPublicUser) })
+    res.json({ users: (await users.list({ status, role })).map(toPublicUser) })
   })
 
-  router.patch('/users/:id', (req, res) => {
+  router.patch('/users/:id', async (req, res) => {
     const status = req.body?.status
     if (!SETTABLE_STATUSES.includes(status)) {
       throw new HttpError(400, 'validation', 'Unknown status', { status: 'invalid' })
     }
-    const target = users.findById(Number(req.params.id))
+    const id = Number(req.params.id)
+    const target = Number.isInteger(id) ? await users.findById(id) : null
     if (!target) throw new HttpError(404, 'not_found', 'No such user')
     // Stops an admin locking themselves (and possibly everyone) out.
     if (target.id === req.user.id) {
       throw new HttpError(400, 'cannot_change_self', 'You cannot change your own account status')
     }
 
-    const updated = users.updateStatus(target.id, status, req.user.id)
-    if (status !== 'active') sessions.revokeAllForUser(target.id)
+    const updated = await users.updateStatus(target.id, status, req.user.id)
+    if (status !== 'active') await sessions.revokeAllForUser(target.id)
     res.json({ user: toPublicUser(updated) })
   })
 

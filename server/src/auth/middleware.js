@@ -11,10 +11,10 @@ function bearerToken(req) {
 }
 
 export function createAuthMiddleware({ sessions, users }) {
-  function requireAuth(req, res, next) {
+  async function requireAuth(req, res, next) {
     const token = bearerToken(req)
-    const userId = token && sessions.userIdFor(token)
-    const user = userId && users.findById(userId)
+    const userId = token && (await sessions.userIdFor(token))
+    const user = userId && (await users.findById(userId))
     // A disabled/rejected account loses access immediately, even with a
     // session that hasn't expired yet.
     if (!user || user.status !== 'active') {

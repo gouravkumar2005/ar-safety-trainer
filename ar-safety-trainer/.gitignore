@@ -25,7 +25,6 @@ dist-ssr
 
 .vercel
 .env*
-!.env*.example
 
 # Generated build inputs (see scripts/fetch-ml-assets.mjs)
 public/mediapipe/

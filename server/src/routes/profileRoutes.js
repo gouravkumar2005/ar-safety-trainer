@@ -22,14 +22,14 @@ export function profileRoutes({ users, sessions, requireAuth }) {
     res.json({ user: toPublicUser(req.user) })
   })
 
-  router.patch('/', (req, res) => {
+  router.patch('/', async (req, res) => {
     const { value, errors } = validateProfileUpdate(req.body)
     if (errors) throw new HttpError(400, 'validation', 'Please correct the highlighted fields', errors)
 
-    if (value.phone && value.phone !== req.user.phone && users.findByPhone(value.phone)) {
+    if (value.phone && value.phone !== req.user.phone && (await users.findByPhone(value.phone))) {
       throw new HttpError(409, 'validation', 'Already registered', { phone: 'taken' })
     }
-    res.json({ user: toPublicUser(users.updateProfile(req.user.id, value)) })
+    res.json({ user: toPublicUser(await users.updateProfile(req.user.id, value)) })
   })
 
   router.post('/password', async (req, res) => {
@@ -40,9 +40,9 @@ export function profileRoutes({ users, sessions, requireAuth }) {
     const problem = checkPassword(newPassword)
     if (problem) throw new HttpError(400, 'validation', 'Choose a stronger password', { newPassword: problem })
 
-    users.updatePassword(req.user.id, await hashPassword(newPassword))
+    await users.updatePassword(req.user.id, await hashPassword(newPassword))
     // Someone who knew the old password may still be logged in elsewhere.
-    sessions.revokeOthersForUser(req.user.id, req.sessionToken)
+    await sessions.revokeOthersForUser(req.user.id, req.sessionToken)
     res.status(204).end()
   })
 
