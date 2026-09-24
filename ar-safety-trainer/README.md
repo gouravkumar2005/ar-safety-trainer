@@ -3,74 +3,119 @@
 AR-based vocational training & safety certification prototype for Jharkhand's
 mining & manufacturing sector.
 
-## Why a web app when the PS asks for an APK?
+## Two ways to run it: website and Android APK
 
-No Android Studio / Unity / SDK was available in this dev environment, and a
-website is what I could get running immediately, on any phone, with zero
-install. So the plan is two phases:
+The same code in `src/` builds two ways:
 
-1. **Now — PWA.** Everything below runs in Chrome on Android today (and
-   desktop, for fast iteration). AR works via `<model-viewer>`'s AR button
-   (WebXR / Google Scene Viewer). Offline is handled by a service worker
-   (`vite-plugin-pwa`) that caches the app shell + `.glb` models.
-2. **Before submission — wrap it into a real APK.** Once the flow is built
-   out, run:
+- **Website / PWA**: `npm run build`. It runs in Chrome on any phone or
+  desktop, and a service worker caches it for offline use.
+- **Android APK**: `npm run apk:release`. [Capacitor](https://capacitorjs.com)
+  bundles the whole app inside a native Android app, which works fully
+  offline from the first launch. Nothing is downloaded at runtime.
+
+Only `src/platform/` knows which of the two it's running in (see
+"Project structure" below). Every feature is written once.
+
+### What differs between the website and the APK
+
+| Capability | Website (Chrome) | Android APK |
+|---|---|---|
+| Offline | After the first visit (service worker) | Always. Everything is inside the APK |
+| "View in your space" AR | WebXR, or Google Scene Viewer | Google Scene Viewer via a native plugin (`SceneViewerPlugin.java`). **Needs internet**, because Scene Viewer is a separate app and loads the hosted copy of the model. The per-model `scale` isn't applied, but the user can pinch to resize |
+| Drag-to-equip / operate sims | Real world-anchored WebXR where supported, otherwise camera overlay | Camera-overlay mode (Android's WebView has no WebXR). This is the same fallback the website already uses |
+| Voice narration | Browser `speechSynthesis` | The phone's own TTS engine |
+| Voice input (emergency) | Web Speech API | The phone's own speech recognizer |
+| Export / audit report | File download | Android share sheet (save to Files, Drive, WhatsApp…) |
+| CPR hand tracking / pose | MediaPipe, bundled locally | Same |
+| Certificates / ledger | Web Crypto + IndexedDB | Same (Capacitor serves the app from `https://localhost`, a secure context) |
+
+## Project structure
+
+```
+ar-safety-trainer/
+  src/
+    main.js            entry point: shell + router + Android setup
+    config.js          app-wide settings (hosted URL, PPE gate switch)
+    app/               the app frame
+      shell.js         top bar (🚨, text size, sound, verify, language)
+      router.js        hash router: matches #/… to a feature's screen
+      routes.js        the route table, collected from every feature
+    features/          one folder per feature; each exports its `routes`
+      home/            module list
+      training/        3D/AR viewer, guided tour, quiz, result
+      itemGallery/     per-item model gallery + viewer
+      simulations/     drag-to-equip (PPE) and drag-to-operate (machinery) sims
+      emergency/       voice triage hub, first-aid guides, CPR camera assist
+      certificates/    QR certificate issue + verify
+      admin/           compliance dashboard, aggregate stats, audit report
+      grievance/       report-a-concern form
+    content/           training content shared by features (modules, items)
+    core/              app-wide logic: i18n/, state.js, ledger.js
+    shared/            reusable pieces: ui/ (confetti, sound), three/ (AR scene)
+    platform/          web-vs-Android adapters: speech, voice input, files,
+                       clipboard, AR launcher, ML asset paths, Android setup
+    styles/            global CSS (feature CSS lives in its feature folder)
+  public/models/       .glb 3D models
+  android/             native Android project (Capacitor)
+  assets/              app icon + splash sources (SVG)
+  scripts/             build helpers (ML assets, icons, Gradle, signing notes)
+```
+
+Import rules that keep it easy to follow:
+
+- A feature may import from `core/`, `content/`, `shared/` and `platform/`,
+  **never from another feature**. Features link to each other only by
+  navigating (`navigate('#/verify')`).
+- Browser vs. Android differences live **only** in `platform/`.
+
+### Adding a feature
+
+1. Create `src/features/<name>/` with its screen(s), e.g. `fooScreen.js`
+   exporting `renderFoo(main, navigate, params)`.
+2. Add `src/features/<name>/index.js`:
+   ```js
+   import { renderFoo } from './fooScreen.js'
+   export const routes = [{ path: '/foo/:id', render: renderFoo }]
    ```
-   npm run build
-   npx @bubblewrap/cli init --manifest=https://<your-hosted-url>/manifest.webmanifest
-   npx @bubblewrap/cli build
-   ```
-   Bubblewrap (Google's official tool) wraps a hosted PWA into a signed,
-   installable `.apk`/`.aab` using a Trusted Web Activity — this is what
-   satisfies the PS's "Functioning Android APK" outcome. It needs a real
-   HTTPS URL to point at (Vercel/Netlify free tier works) and JDK (already
-   installed) — it downloads its own minimal Android SDK on first run, no
-   Android Studio needed.
+3. Add it to the list in `src/app/routes.js`.
+4. Add any UI text to both `src/core/i18n/strings.en.js` and `strings.hi.js`.
 
-   If AR training modules outgrow what `<model-viewer>` can do (custom
-   physics, multi-object interaction, raycasting from the camera), the
-   escape hatch is a full WebXR rewrite with Three.js directly — the module
-   data model (`src/data/modules.js`) is deliberately framework-agnostic so
-   that migration wouldn't touch the quiz/cert/state code at all. Native
-   (Kotlin + ARCore/SceneView, or Unity + AR Foundation) is the other
-   escape hatch if the team gets access to Android Studio/Unity later —
-   ask me and I'll scaffold that instead.
 
 ## What's built
 
-- **Module list** (`src/screens/home.js`) — 6 modules: the PS's 5 domains
+- **Module list** (`src/features/home/homeScreen.js`) — 6 modules: the PS's 5 domains
   plus a cross-cutting PPE Compliance module (see below). Two are wired to
   your real models:
   - **PPE Compliance Check** — your "uniform" model
     (`public/models/ppe-uniform.glb`). Doubles as a **mandatory induction
-    gate**: `main.js`'s router redirects to this module first, before any
+    gate**: `src/app/router.js` redirects to this module first, before any
     other, until it's been passed once — same as a real mine-site PPE
     check. It stays revisitable from the home screen afterward.
     Also has an **"Explore each item in detail" gallery**
-    (`src/screens/itemGallery.js` / `itemViewer.js`, `src/data/ppeItems.js`
+    (`src/features/itemGallery/galleryScreen.js` / `itemViewerScreen.js`, `src/content/ppeItems.js`
     — these two screens are generic over any module via
-    `src/data/itemGalleries.js`'s moduleId→items lookup, not PPE-specific
+    `src/content/itemGalleries.js`'s moduleId→items lookup, not PPE-specific
     despite the filenames' history) — 5 of your real per-item models
     (helmet+lamp, SCSR, vest, boots, gas detector), each with its own
     dedicated rotate/zoom/AR-place viewer, on-screen detail text, and a
     "Listen" button that narrates in whichever language is active. Purely
     additive — the combined-model view and its quiz/gate are unchanged.
     Its "🎮 Play as a Guided Tour" button opens an **interactive
-    drag-to-equip AR sim** (`src/screens/ppeEquipSim.js`) instead of a
+    drag-to-equip AR sim** (`src/features/simulations/ppeEquipSim.js`) instead of a
     passive walkthrough: a stylized procedural mannequin
-    (`src/utils/proceduralModels.js` — plain Three.js primitives, no new
+    (`src/shared/three/proceduralModels.js` — plain Three.js primitives, no new
     3D asset) stands in the camera view and you drag each of the 5 real
     PPE item models onto it in sequence; equipping one narrates, in
     Hindi/English, the real injury risk of skipping it
-    (`ppeItems.js`'s `consequence` field), ending on the same "Fully
+    (`content/ppeItems.js`'s `consequence` field), ending on the same "Fully
     Equipped!" + confetti screen as before. Placement is a real,
     world-anchored WebXR AR session on devices that support it (Android
     Chrome, via `hit-test` + `dom-overlay`) and automatically falls back
     to a fixed camera-preview overlay everywhere else — same shared
-    core (`src/utils/xrPlacementScene.js`) both new sims use, and the
+    core (`src/shared/three/xrPlacementScene.js`) both new sims use, and the
     active tier is shown on-screen, never silently swapped. If neither
     can start at all (no camera, no WebGL), it falls back to the
-    original `tour.js` walkthrough rather than a broken screen — that
+    original `tourScreen.js` walkthrough rather than a broken screen — that
     screen is unchanged and still what every locked-for-now module will
     use once unlocked.
   - **Machinery Safety** — your "continuous miner" model
@@ -78,7 +123,7 @@ install. So the plan is two phases:
     hazards of that machine (methane/coal-dust ignition at the cutting
     drum, mechanical pinch points, the high-voltage trailing cable, roof
     fall risk, lockout-tagout). Its guided tour is the same kind of
-    interactive AR sim (`src/screens/machineryOpsSim.js`, a tabletop
+    interactive AR sim (`src/features/simulations/machineryOpsSim.js`, a tabletop
     **diorama scale** — deliberately not the 1:1 scale the normal AR
     viewer uses for this model): drag the miner into a procedural coal
     pile (`buildCoalPile()`, same honest-placeholder spirit as the
@@ -87,7 +132,7 @@ install. So the plan is two phases:
     through this richer interaction — then drag the conveyor belt into
     place to carry the coal out, narrating its existing hazard copy.
     Also has an item gallery of its own real models — **Forklift** and
-    **Conveyor Belt** (`src/data/machineryItems.js`) — general equipment
+    **Conveyor Belt** (`src/content/machineryItems.js`) — general equipment
     hazards (tip-over/blind-spot risk; belt nip points/entanglement)
     alongside the continuous miner, same pattern as PPE's gallery.
   - Fire & Explosion, Gas Leak, and Chemical Hazard are **intentionally
@@ -95,33 +140,33 @@ install. So the plan is two phases:
     a placeholder wired to what turned out to be the continuous-miner
     model; reverted rather than leave a mislabeled demo.) Drop a `.glb`
     into `public/models/`, flip `status` to `'active'`, fill in
-    hotspots/quiz in `src/data/modules.js` — nothing else needs to change
+    hotspots/quiz in `src/content/modules.js` — nothing else needs to change
     to unlock one.
   - **Emergency Response** is active but deliberately has **no 3D model**
     — its core mechanic is voice triage plus honest live-camera assist,
     not a static scene. Say what happened ("mujhe cut lag gaya" / "my leg
     is broken") and it opens the matching first-aid guide
-    (`src/data/emergencyGuides.js`, Indian Red Cross Society protocol:
+    (`src/features/emergency/emergencyGuides.js`, Indian Red Cross Society protocol:
     Bleeding, Fracture, Burn, Choking, CPR), narrated step-by-step in
     Hindi/English exactly like the guided tours above; a manual grid of
     all 5 is always available too, in case voice isn't usable. **The
     camera never diagnoses an injury** — it only helps with *where*, once
     the person has already said or picked *what*: the CPR guide's
     compression step can open a real hand-motion-tracked rate check
-    (`src/utils/handTracker.js`, MediaPipe HandLandmarker running
+    (`src/features/emergency/handTracker.js`, MediaPipe HandLandmarker running
     on-device — genuine detected compressions/min, never a canned
     number, and a relative-only depth bar, never a fake cm figure), and
     the Bleeding/Fracture guides can optionally overlay a "press/support
     here" marker on the limb already named
-    (`src/utils/poseTracker.js`, positioning only). Every camera/mic path
+    (`src/features/emergency/poseTracker.js`, positioning only). Every camera/mic path
     degrades to the text-only guide cleanly if permission is denied or
     unsupported — never a broken screen, never a fake result.
-- **AR viewer** (`src/screens/arViewer.js`) — loads the model, lets the
+- **AR viewer** (`src/features/training/arViewerScreen.js`) — loads the model, lets the
   worker rotate/zoom it or place it in real space via AR, and tap hotspots
   to read about each hazard.
-- **Assessment** (`src/screens/quiz.js`, `src/screens/result.js`) —
+- **Assessment** (`src/features/training/quizScreen.js`, `src/features/training/resultScreen.js`) —
   one-question-at-a-time quiz, 70% pass threshold, scored client-side.
-- **Local tamper-evident ledger** (`src/utils/ledger.js`) — a hash-chained,
+- **Local tamper-evident ledger** (`src/core/ledger.js`) — a hash-chained,
   append-only log in IndexedDB. Every quiz result, certificate, and
   grievance report is an entry signed with a per-device ECDSA key that's
   generated on first run and never leaves the device (`extractable:
@@ -133,7 +178,7 @@ install. So the plan is two phases:
   string embedded in the JS bundle (readable via devtools, forgeable from
   any device) — that approach is gone, not just hidden better.
   **Accountability framing:** the same mechanism doubles as an audit trail
-  — `#/admin`'s "Generate audit report" (`src/utils/auditReport.js`) turns
+  — `#/admin`'s "Generate audit report" (`src/features/admin/auditReport.js`) turns
   it into a plain-language document (device fingerprint, every entry
   restated, the integrity verdict) suitable for internal review or an
   RTI-style disclosure request. It still reflects one worker's device,
@@ -142,16 +187,16 @@ install. So the plan is two phases:
   backend should sit on MeitY-empanelled / NIC Indian government cloud
   infrastructure, not a generic foreign host — noted here as a roadmap
   decision, not something a static frontend can enforce on its own.
-- **QR certificate** (`src/screens/certificate.js`,
-  `src/utils/certificate.js`) — generates a QR-encoded, ledger-signed
+- **QR certificate** (`src/features/certificates/certificateScreen.js`,
+  `src/features/certificates/certificate.js`) — generates a QR-encoded, ledger-signed
   certificate after a pass, with a "copy certificate data" button for
   pasting straight into the verifier.
-- **Certificate verifier** (`src/screens/verify.js`, `#/verify`, reachable
+- **Certificate verifier** (`src/features/certificates/verifyScreen.js`, `#/verify`, reachable
   from the top bar) — paste a certificate's data, see **VALID**,
   **TAMPERED**, or **valid-but-unconfirmed-on-this-device**. Hand-edit one
   character of a real certificate and re-check it to see tamper detection
   live.
-- **Compliance dashboard** (`src/screens/admin.js`, `#/admin`, no nav link
+- **Compliance dashboard** (`src/features/admin/adminScreen.js`, `#/admin`, no nav link
   yet — direct URL only) — the PS's required "web-based admin compliance
   dashboard," built honestly for a no-backend build: a trainee device
   **exports** its data as one JSON file; the dashboard **imports** that
@@ -161,13 +206,13 @@ install. So the plan is two phases:
   that needs a real backend, which this round's scope deliberately excluded
   (see Backlog in the plan file). It now also has an **aggregate/MIS
   section** — import several exported files at once
-  (`src/utils/aggregate.js`) for pass rates by module, most-missed quiz
+  (`src/features/admin/aggregate.js`) for pass rates by module, most-missed quiz
   questions, and worker coverage **within that imported batch** (never
   phrased as a share of Jharkhand's total workforce — this app has no
   access to that number). Files that fail their own integrity check are
   excluded from the stats and listed separately, never silently dropped or
   silently counted.
-- **Grievance / feedback channel** (`src/screens/grievance.js`,
+- **Grievance / feedback channel** (`src/features/grievance/grievanceScreen.js`,
   `#/grievance`, linked from the home screen) — a CPGRAMS-style "report a
   concern" form. Name/ID/contact are all optional; forcing identity on a
   hazard report risks suppressing honest reporting. Stored as a
@@ -193,19 +238,19 @@ install. So the plan is two phases:
   tint at 4.01:1 (needs 4.5:1) and card/input borders at ~1.4:1 (needs
   3.0:1, non-text contrast) — border color is now visibly brighter as a
   result, an intentional look change.
-- **Voice narration** (`src/utils/speech.js`) — a "Listen" button on
+- **Voice narration** (`src/platform/speech.js`) — a "Listen" button on
   hotspot info and on quiz questions (reads the question *and* every
   option) using the browser's built-in SpeechSynthesis, offline, no
   dependency. If no voice exists for the current language on that device,
   it says so rather than reading the text in the wrong language's
   accent/pronunciation — a clear gap is safer than misleading audio for a
   low-literacy listener.
-- **Voice input** (`src/utils/voiceCommand.js`) — the counterpart to the
+- **Voice input** (`src/platform/voiceInput.js`) — the counterpart to the
   above: the Web Speech API's `SpeechRecognition`, used only by the
   Emergency Response hub's mic button. Same honest-failure shape as
   `speech.js` — unsupported/denied/no-match all resolve to `null`, never a
   guessed transcript; the caller falls back to a manual list.
-- **Language registry** (`LANGUAGES` in `src/utils/i18n.js`) — English and
+- **Language registry** (`LANGUAGES` in `src/core/i18n/`) — English and
   Hindi are real; Santali, Mundari, Ho, and Kurukh are now data-level
   entries marked `locked` (same honesty rule as before: naming a language
   isn't the same claim as translating into it, so nothing is fabricated).
@@ -218,7 +263,7 @@ install. So the plan is two phases:
   ledger — only works in a secure context, which a plain
   `http://<lan-ip>:5173` URL doesn't qualify as. Your browser will warn
   about the certificate; that's expected for local dev, click through it.
-- **i18n** — English + Hindi are filled in (`src/utils/i18n.js`). Santali
+- **i18n** — English + Hindi are filled in (`src/core/i18n/`). Santali
   is deliberately left as a TODO: machine-translating Santali (especially
   in Ol Chiki script) badly would be worse than not having it — get real
   copy from a native speaker/translator and it's a one-file change to add.
@@ -229,11 +274,11 @@ install. So the plan is two phases:
   face it (`model-viewer`'s `cameraTarget` interpolates on its own — no
   custom animation code — and resets on close); the result screen's score
   is an animated SVG ring (`stroke-dashoffset` transition) with a canvas
-  confetti burst (`src/utils/confetti.js`) on a pass; certificates animate
+  confetti burst (`src/shared/ui/confetti.js`) on a pass; certificates animate
   in on generation; screens cross-fade via the native **View Transitions
   API** (`document.startViewTransition`, no-ops gracefully on unsupported
   browsers); haptic ticks (`navigator.vibrate`) and synthesized Web Audio
-  tones (`src/utils/sound.js`, mute toggle in the top bar) mark correct/
+  tones (`src/shared/ui/sound.js`, mute toggle in the top bar) mark correct/
   incorrect answers and certificate issuance. Zero new dependencies.
   Deliberately **not** attempted: animating the 3D models themselves — both
   current `.glb` files have no baked-in animations (checked their glTF
@@ -250,7 +295,7 @@ a sync-queue design scaffold, photo-binding at certificate issuance, an
 always-reachable offline emergency-reference widget, and the optional
 public-blockchain testnet-anchoring stretch path (Polygon Amoy, would need
 to be pre-anchored before any live demo — see the plan file for why). Also
-still open: real app icons (currently reusing the Vite favicon placeholder),
+still open: a real website favicon (the APK has its own icon; the web build still uses the Vite placeholder),
 the remaining 4 domain modules once their `.glb` models arrive, real
 DigiLocker/e-Shram/NSQF integration (needs the sponsoring government
 department's formal onboarding — not something this codebase can do on its
@@ -271,7 +316,7 @@ Full reasoning behind all of the above:
 
 ## Tuning hotspots
 
-Hotspot positions in `src/data/modules.js` (`position`, `normal`) are
+Hotspot positions in `src/content/modules.js` (`position`, `normal`) are
 generic guesses, not measured against your actual model's geometry. Run the
 dev server, open the module, and nudge the numbers ("x y z") until each dot
 sits on the right spot — `<model-viewer>`'s camera-controls make this fast
@@ -283,20 +328,22 @@ Every `.glb` so far (`continuous-miner`, `ppe-uniform`, and all 5 PPE item
 models) was exported normalized to a 1-metre bounding box — harmless in
 the in-page viewer (it auto-frames regardless of absolute scale) but very
 wrong once placed in **real AR**, where actual meters matter: a helmet
-was appearing about a metre across. Each module/item in `modules.js` /
-`ppeItems.js` now has a `scale` field (e.g. `0.28` for the helmet, `9` for
+was appearing about a metre across. Each module/item in `content/modules.js` /
+`content/ppeItems.js` now has a `scale` field (e.g. `0.28` for the helmet, `9` for
 the continuous miner) applied via `<model-viewer scale="...">`, which is
 the documented, official way to correct this without re-exporting the
 file. **These are estimates based on typical real-world sizes, not
 measured against the actual objects** — test each one in real AR on a
 phone and adjust the number in the relevant data file if it still looks
-too big/small. If a hotspot's camera-glide-on-tap (`arViewer.js`) ever
+too big/small. If a hotspot's camera-glide-on-tap (`arViewerScreen.js`) ever
 looks off after changing a `scale`, check that function's math — hotspot
 `position` values are in the model's local (unscaled) space, so they're
 multiplied by `scale` before being used as `cameraTarget`, which expects
 world-space coordinates.
 
 ## Running it
+
+### Website
 
 ```
 npm install
@@ -313,3 +360,44 @@ generation will silently fail (see "What's built" → Offline, above).
 npm run build      # production build, output in dist/
 npm run preview    # serve the production build locally
 ```
+
+`npm run build` first runs `scripts/fetch-ml-assets.mjs`. That script copies
+the MediaPipe runtime and downloads the hand/pose models into
+`public/mediapipe/` (gitignored). It needs internet once; later builds skip
+anything already there.
+
+### Android APK
+
+You'll need:
+
+- **JDK 21**. The Android build doesn't support newer JDKs such as 25. If
+  JDK 21 isn't your default, point Gradle at it in
+  `~/.gradle/gradle.properties`:
+  `org.gradle.java.home=C:/path/to/jdk-21`
+- **Android SDK** with `platforms;android-36`, `build-tools;36.0.0` and
+  `platform-tools`. Android Studio installs these. With only the
+  command-line tools, run `sdkmanager` yourself.
+- `android/local.properties` containing `sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk`
+  (gitignored and machine-specific).
+
+```
+npm run apk:debug      # android/app/build/outputs/apk/debug/app-debug.apk
+npm run apk:release    # android/app/build/outputs/apk/release/app-release.apk
+```
+
+Both commands build the web app in Android mode, copy it into `android/`
+(`cap sync`), then run Gradle. The first Gradle run downloads its
+dependencies and takes several minutes.
+
+- **Signing**: a release build is signed only if `android/keystore.properties`
+  exists. See [scripts/create-keystore.md](scripts/create-keystore.md), and
+  back up the key.
+- **Install on a phone**: enable USB debugging, then run
+  `adb install -r android/app/build/outputs/apk/release/app-release.apk`.
+  You can also just copy the APK to the phone and open it.
+- **Icons / splash**: edit `assets/icon-foreground.svg` /
+  `icon-background.svg`, then run `npm run android:icons`.
+- **Native code** lives in `android/app/src/main/java/.../`.
+  `SceneViewerPlugin.java` handles AR hand-off, and permissions are in
+  `AndroidManifest.xml`. If Android Studio is installed, `npx cap open android`
+  opens the project in it.

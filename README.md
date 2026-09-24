@@ -8,7 +8,9 @@ India Hackathon problem statement **SIH26041** (Government of Jharkhand).
 
 ## In this repo
 
-- **[`ar-safety-trainer/`](ar-safety-trainer/)** — the actual app. A Vite
+- **[`ar-safety-trainer/`](ar-safety-trainer/)** — the actual app. One
+  codebase that builds both as a website and as an offline **Android APK**
+  (Capacitor, `npm run apk:release`). It's a Vite
   Progressive Web App using `<model-viewer>` for AR, a local hash-chained
   tamper-evident certificate ledger (Web Crypto), offline-first service
   worker, Hindi/English voice narration, and more — see that folder's own
