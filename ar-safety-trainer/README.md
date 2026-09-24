@@ -21,7 +21,7 @@ Only `src/platform/` knows which of the two it's running in (see
 | Capability | Website (Chrome) | Android APK |
 |---|---|---|
 | Offline | After the first visit (service worker) | Always. Everything is inside the APK |
-| "View in your space" AR | WebXR, or Google Scene Viewer | Google Scene Viewer via a native plugin (`SceneViewerPlugin.java`). **Needs internet**, because Scene Viewer is a separate app and loads the hosted copy of the model. The per-model `scale` isn't applied, but the user can pinch to resize |
+| "View in your space" AR | WebXR, or Google Scene Viewer | The app's own AR screen (`android/.../ar/ArViewerActivity.kt`, ARCore + SceneView). It is **fully offline** because it loads the model bundled in the APK, and it uses each model's real-world `scale`. Tap a surface to place the model, pinch to resize, twist to rotate. Needs an ARCore-supported phone; on other phones it falls back to Google Scene Viewer, which needs internet |
 | Drag-to-equip / operate sims | Real world-anchored WebXR where supported, otherwise camera overlay | Camera-overlay mode (Android's WebView has no WebXR). This is the same fallback the website already uses |
 | Voice narration | Browser `speechSynthesis` | The phone's own TTS engine |
 | Voice input (emergency) | Web Speech API | The phone's own speech recognizer |
@@ -464,6 +464,7 @@ dependencies and takes several minutes.
 - **Icons / splash**: edit `assets/icon-foreground.svg` /
   `icon-background.svg`, then run `npm run android:icons`.
 - **Native code** lives in `android/app/src/main/java/.../`.
-  `SceneViewerPlugin.java` handles AR hand-off, and permissions are in
+  `ar/ArViewerActivity.kt` is the offline AR screen and `ar/ArViewerPlugin.kt`
+  connects it to the web code (`src/platform/arLauncher.js`). Permissions are in
   `AndroidManifest.xml`. If Android Studio is installed, `npx cap open android`
   opens the project in it.

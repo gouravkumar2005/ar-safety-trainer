@@ -27,6 +27,17 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Offline in-app AR (ar/ArViewerActivity.kt). -->
+        <activity
+            android:name=".ar.ArViewerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- "optional": the app still installs on phones without AR support;
+             only the AR screen needs ARCore (it offers to install it). -->
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
     </application>
 
     <!-- Permissions -->
