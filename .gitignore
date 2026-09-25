@@ -24,3 +24,5 @@ _verify-driver/
 .DS_Store
 *.local
 Thumbs.db
+
+.claude/settings.local.json
