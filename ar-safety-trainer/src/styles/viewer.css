@@ -58,3 +58,26 @@ model-viewer {
 @keyframes slideup { from { transform: translateY(100%);} to { transform: translateY(0);} }
 .sheet h4 { margin: 0 0 6px; font-size: 1.0625rem; color: var(--navy); display: flex; align-items: center; gap: 8px; }
 .sheet p { margin: 0 0 14px; font-size: 0.9375rem; line-height: 1.55; }
+
+/* Big previous/next arrows on the viewer's edges (guided tour). */
+.viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--navy);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--navy);
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.25);
+  cursor: pointer;
+  z-index: 2;
+}
+.viewer-nav.is-prev { left: 8px; }
+.viewer-nav.is-next { right: 8px; background: var(--navy); color: #fff; }
+.viewer-nav:active { transform: translateY(-50%) scale(0.94); }
+.viewer-nav:disabled { opacity: 0.35; cursor: default; }
+.viewer-nav:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }

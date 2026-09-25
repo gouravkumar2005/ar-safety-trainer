@@ -9,7 +9,7 @@
 // or conveys status on its own.
 
 import {
-  ALargeSmall, ArrowLeft, Award, BadgeCheck, Bone, Box, ChartColumn, Check, ChevronRight,
+  ALargeSmall, ArrowLeft, Award, BadgeCheck, Bone, Box, ChartColumn, Check, ChevronLeft, ChevronRight,
   CircleAlert, CircleCheck, CirclePlay, CircleUser, CircleX, ClipboardCheck, Clock, Cog,
   Construction, Copy, Download, Droplet, ExternalLink, Eye, Factory, FileText, Flame,
   FlaskConical, Footprints, Forklift, Gamepad2, HandHeart, HardHat, HeartPulse, Hourglass,
@@ -22,7 +22,7 @@ import {
 
 const ICONS = {
   'a-large-small': ALargeSmall, 'arrow-left': ArrowLeft, award: Award, 'badge-check': BadgeCheck,
-  bone: Bone, box: Box, 'chart-column': ChartColumn, check: Check, 'chevron-right': ChevronRight,
+  bone: Bone, box: Box, 'chart-column': ChartColumn, check: Check, 'chevron-left': ChevronLeft, 'chevron-right': ChevronRight,
   'circle-alert': CircleAlert, 'circle-check': CircleCheck, 'circle-play': CirclePlay,
   'circle-user': CircleUser, 'circle-x': CircleX, 'clipboard-check': ClipboardCheck, clock: Clock,
   cog: Cog, construction: Construction, copy: Copy, download: Download, droplet: Droplet,

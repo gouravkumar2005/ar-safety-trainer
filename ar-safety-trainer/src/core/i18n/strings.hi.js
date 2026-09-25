@@ -332,4 +332,7 @@ export const hi = {
   grievanceAnonShort: 'नाम देना ज़रूरी नहीं',
   grievanceOptionalDetails: 'अधिक विवरण (वैकल्पिक)',
   demoLoginLabel: 'डेमो लॉगिन (किसी एक पर टैप करें)',
+  hintTapArrows: 'तीर दबाएं',
+  hintTapNext: 'आगे दबाएं',
+  nextItem: 'अगला उपकरण',
 }

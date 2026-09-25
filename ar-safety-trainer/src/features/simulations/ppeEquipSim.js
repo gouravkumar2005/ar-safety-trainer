@@ -21,8 +21,6 @@ import { icon, ITEM_ICONS } from '../../shared/ui/icon.js'
 // `consequence` field).
 
 const DROP_THRESHOLD_PX = 60
-const AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS = 600
-const AUTO_ADVANCE_FALLBACK_MS = 5500
 
 export function renderPpeEquipSim(main, navigate) {
   const mod = getModule('ppe-compliance')
@@ -256,15 +254,20 @@ export function renderPpeEquipSim(main, navigate) {
     navigator.vibrate?.(20)
 
     const myIndex = currentIndex
-    speak(`${pick(item.title)}. ${pick(item.consequence)}`, getLang(), () => {
-      if (leftScreen || myIndex !== currentIndex) return
-      advanceTimer = setTimeout(() => advanceStep(myIndex), AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS)
-    }).then((started) => {
-      if (leftScreen || myIndex !== currentIndex) return
-      if (!started) {
-        advanceTimer = setTimeout(() => advanceStep(myIndex), AUTO_ADVANCE_FALLBACK_MS)
-      }
+    speak(`${pick(item.title)}. ${pick(item.consequence)}`, getLang())
+
+    // The worker moves on when ready: a Next button, never a timer.
+    const upNext = ppeItems[myIndex + 1]
+    const nextBtn = document.createElement('button')
+    nextBtn.className = 'btn btn-primary btn-block mt-8'
+    nextBtn.innerHTML = upNext
+      ? `${t('nextItem')} ${icon(ITEM_ICONS[upNext.id] || 'box', { size: 20 })} ${icon('chevron-right', { size: 20 })}`
+      : `${icon('check', { size: 20 })} ${t('tourFinishBtn')}`
+    nextBtn.addEventListener('click', () => {
+      stopSpeaking()
+      advanceStep(myIndex)
     })
+    captionEl.appendChild(nextBtn)
   }
 
   function advanceStep(expectedIndex) {

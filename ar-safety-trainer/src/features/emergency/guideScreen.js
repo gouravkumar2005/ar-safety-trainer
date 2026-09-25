@@ -22,8 +22,6 @@ import { GUIDE_ICONS } from './hubScreen.js'
 //     position-only marker (poseTracker.js) on the limb this guide
 //     already concerns — never a diagnosis.
 
-const AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS = 600
-const AUTO_ADVANCE_FALLBACK_MS = 5000
 
 const POSE_ZONE_BY_GUIDE = { bleeding: 'arm', fracture: 'leg' }
 
@@ -54,7 +52,7 @@ export function renderEmergencyGuide(main, navigate, params) {
       <div class="module-card tour-card" id="eg-text"></div>
       <div id="eg-extras" class="mt-12"></div>
       <div class="hint-icons">
-        <span>${icon('hand', { size: 16 })} ${t('tourSwipeHint')}</span>
+        <span>${icon('chevron-right', { size: 16 })} ${t('hintTapNext')}</span>
         <span>${icon('volume-2', { size: 16 })} ${t('hintAutoVoice')}</span>
       </div>
     </div>
@@ -95,7 +93,7 @@ export function renderEmergencyGuide(main, navigate, params) {
   let renderId = 0
 
   function renderStep() {
-    const myRenderId = ++renderId
+    ++renderId
     stopSpeaking()
     stopPoseOverlay()
     clearTimeout(advanceTimer)
@@ -128,19 +126,9 @@ export function renderEmergencyGuide(main, navigate, params) {
       ? `${icon('check', { size: 20 })} ${t('tourFinishBtn')}`
       : `${t('next')} ${icon('chevron-right', { size: 20 })}`
 
-    speak(`${pick(step.title)}. ${pick(step.info)}`, getLang(), () => {
-      if (myRenderId !== renderId) return
-      advanceTimer = setTimeout(() => {
-        if (myRenderId === renderId) goNext()
-      }, AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS)
-    }).then((started) => {
-      if (myRenderId !== renderId) return
-      if (!started) {
-        advanceTimer = setTimeout(() => {
-          if (myRenderId === renderId) goNext()
-        }, AUTO_ADVANCE_FALLBACK_MS)
-      }
-    })
+    // Narrate the step, but never move on by itself: the worker decides
+    // when to go next (arrow / Next button).
+    speak(`${pick(step.title)}. ${pick(step.info)}`, getLang())
   }
 
   function renderPoseAssistToggle(step) {
@@ -217,17 +205,6 @@ export function renderEmergencyGuide(main, navigate, params) {
   nextBtn.addEventListener('click', goNext)
   prevBtn.addEventListener('click', goPrev)
 
-  const swipeZone = main.querySelector('#eg-swipe-zone')
-  let startX = null
-  swipeZone.addEventListener('pointerdown', (e) => { startX = e.clientX })
-  swipeZone.addEventListener('pointerup', (e) => {
-    if (startX === null) return
-    const dx = e.clientX - startX
-    startX = null
-    if (Math.abs(dx) < 50) return
-    if (dx < 0) goNext()
-    else goPrev()
-  })
 
   function renderComplete() {
     stopSpeaking()

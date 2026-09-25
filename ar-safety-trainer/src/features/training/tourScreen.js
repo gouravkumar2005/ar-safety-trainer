@@ -25,8 +25,6 @@ import { icon } from '../../shared/ui/icon.js'
 // current language, falls back to a fixed dwell instead of waiting on
 // narration that will never happen.
 
-const AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS = 600
-const AUTO_ADVANCE_FALLBACK_MS = 5000
 
 export function renderTour(main, navigate, params) {
   const mod = getModule(params.id)
@@ -56,9 +54,15 @@ export function renderTour(main, navigate, params) {
     <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${pick(mod.shortTitle || mod.title)}</button>
     <div class="progress-dots mt-8" aria-hidden="true" id="tour-dots"></div>
     <div id="tour-swipe-zone">
-      <div class="viewer-wrap" id="tour-viewer"></div>
+      <!-- Arrow buttons sit on the viewer's edges; dragging the model only
+           rotates it and never changes the step. -->
+      <div class="viewer-wrap">
+        <div id="tour-viewer"></div>
+        <button class="viewer-nav is-prev" id="tour-arrow-prev" aria-label="${t('tourPrev')}" title="${t('tourPrev')}">${icon('chevron-left', { size: 30, stroke: 2.5 })}</button>
+        <button class="viewer-nav is-next" id="tour-arrow-next" aria-label="${t('next')}" title="${t('next')}">${icon('chevron-right', { size: 30, stroke: 2.5 })}</button>
+      </div>
       <div class="hint-icons">
-        <span>${icon('hand', { size: 16 })} ${t('tourSwipeHint')}</span>
+        <span>${icon('chevron-right', { size: 16 })} ${t('hintTapArrows')}</span>
         <span>${icon('volume-2', { size: 16 })} ${t('hintAutoVoice')}</span>
       </div>
       <div class="module-card tour-card mt-12" id="tour-text"></div>
@@ -80,6 +84,8 @@ export function renderTour(main, navigate, params) {
   const textRoot = main.querySelector('#tour-text')
   const prevBtn = main.querySelector('#tour-prev')
   const nextBtn = main.querySelector('#tour-next')
+  const arrowPrev = main.querySelector('#tour-arrow-prev')
+  const arrowNext = main.querySelector('#tour-arrow-next')
 
   // Hotspot mode: one model-viewer, created once, reused across steps —
   // only its cameraTarget changes. Item mode creates a fresh one per step
@@ -114,7 +120,7 @@ export function renderTour(main, navigate, params) {
   let renderId = 0
 
   function renderStep() {
-    const myRenderId = ++renderId
+    ++renderId
     stopSpeaking()
     clearTimeout(advanceTimer)
     const step = steps[index]
@@ -146,23 +152,14 @@ export function renderTour(main, navigate, params) {
     `
 
     prevBtn.disabled = index === 0
+    arrowPrev.disabled = index === 0
     nextBtn.innerHTML = index === steps.length - 1
       ? `${icon('check', { size: 20 })} ${t('tourFinishBtn')}`
       : `${t('next')} ${icon('chevron-right', { size: 20 })}`
 
-    speak(`${pick(step.title)}. ${pick(step.info)}`, getLang(), () => {
-      if (myRenderId !== renderId) return // stale — user already moved on
-      advanceTimer = setTimeout(() => {
-        if (myRenderId === renderId) goNext()
-      }, AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS)
-    }).then((started) => {
-      if (myRenderId !== renderId) return
-      if (!started) {
-        advanceTimer = setTimeout(() => {
-          if (myRenderId === renderId) goNext()
-        }, AUTO_ADVANCE_FALLBACK_MS)
-      }
-    })
+    // Narrate the step, but never move on by itself: the worker decides
+    // when to go next (arrow / Next button).
+    speak(`${pick(step.title)}. ${pick(step.info)}`, getLang())
   }
 
   function goNext() {
@@ -185,21 +182,9 @@ export function renderTour(main, navigate, params) {
 
   nextBtn.addEventListener('click', goNext)
   prevBtn.addEventListener('click', goPrev)
+  arrowNext.addEventListener('click', goNext)
+  arrowPrev.addEventListener('click', goPrev)
 
-  // Swipe — attached to a child of main (not main itself) so it's
-  // automatically cleaned up whenever this or any later screen replaces
-  // main's content; every other screen in this app follows the same rule.
-  const swipeZone = main.querySelector('#tour-swipe-zone')
-  let startX = null
-  swipeZone.addEventListener('pointerdown', (e) => { startX = e.clientX })
-  swipeZone.addEventListener('pointerup', (e) => {
-    if (startX === null) return
-    const dx = e.clientX - startX
-    startX = null
-    if (Math.abs(dx) < 50) return
-    if (dx < 0) goNext()
-    else goPrev()
-  })
 
   function renderComplete() {
     stopSpeaking()

@@ -338,4 +338,7 @@ export const en = {
   grievanceAnonShort: 'Your name is optional',
   grievanceOptionalDetails: 'More details (optional)',
   demoLoginLabel: 'Demo login (tap one)',
+  hintTapArrows: 'Tap the arrows',
+  hintTapNext: 'Tap Next',
+  nextItem: 'Next item',
 }

@@ -20,6 +20,8 @@ export function renderQuiz(main, navigate, params) {
   const answers = []
 
   function renderQuestion() {
+    // Never let the previous question's narration keep playing.
+    stopSpeaking()
     const q = mod.quiz[index]
     main.innerHTML = `
       <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
@@ -72,6 +74,7 @@ export function renderQuiz(main, navigate, params) {
 
     actionBtn.addEventListener('click', () => {
       if (!answered) {
+        stopSpeaking()
         answered = true
         answers.push({ questionIndex: index, selected, correct: q.correctIndex })
         const optionEls = optionsEl.querySelectorAll('.option')
@@ -110,6 +113,7 @@ export function renderQuiz(main, navigate, params) {
   }
 
   async function finish() {
+    stopSpeaking()
     const score = answers.filter((a) => a.selected === a.correct).length
     const total = mod.quiz.length
     await recordResult(mod.id, { score, total, answers })
