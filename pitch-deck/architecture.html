@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System Architecture</title>
+<!-- Source for architecture.png. Render (from this folder):
+     chrome --headless=new --hide-scrollbars --force-device-scale-factor=2
+            --window-size=1920,1080 --virtual-time-budget=8000
+            --screenshot=architecture.png architecture.html -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=block" rel="stylesheet">
+<style>
+  :root { --navy:#0b3d91; --saffron:#ff9933; --green:#138808; --ink:#1a1a1a; --dim:#5b6475; --line:#d5dbe5; --bg:#f4f6fa; }
+  html, body { margin:0; background:var(--bg); }
+  #stage { width:1920px; height:1080px; position:relative; overflow:hidden; font-family:'Noto Sans', 'Segoe UI', sans-serif; color:var(--ink); background:var(--bg); }
+  .tri { height:10px; background:linear-gradient(90deg,var(--saffron) 0 33.33%,#fff 33.33% 66.66%,var(--green) 66.66%); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:22px 48px 18px; background:#fff; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:40px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:14px; }
+  header .tag { font-size:18px; font-weight:700; color:var(--dim); text-align:right; line-height:1.4; }
+  header .tag b { color:var(--navy); }
+
+  .flow { display:flex; align-items:stretch; gap:0; padding:26px 36px 0; height:760px; }
+  .col { flex:1; display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 2px 6px rgba(16,24,40,.06); }
+  .col-head { padding:14px 16px; color:#fff; font-weight:800; font-size:21px; display:flex; align-items:center; gap:10px; }
+  .col-head .n { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.25); display:grid; place-items:center; font-size:17px; }
+  .col-head small { display:block; font-size:13px; font-weight:600; opacity:.9; }
+  .boxes { padding:12px; display:flex; flex-direction:column; gap:10px; flex:1; }
+  .box { display:flex; gap:12px; align-items:flex-start; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:#fbfcfe; }
+  .ic { width:44px; height:44px; flex:none; border-radius:10px; display:grid; place-items:center; }
+  .ic svg { width:24px; height:24px; }
+  .box b { display:block; font-size:16.5px; font-weight:800; line-height:1.25; }
+  .box span { display:block; font-size:13.5px; color:var(--dim); line-height:1.4; margin-top:2px; }
+  .lane { font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:4px 2px -2px; display:flex; align-items:center; gap:6px; }
+  .lane svg { width:14px; height:14px; }
+
+  .arrow { width:44px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .arrow div { width:36px; height:36px; border-radius:50%; background:var(--navy); color:#fff; display:grid; place-items:center; box-shadow:0 2px 6px rgba(11,61,145,.35); }
+  .arrow svg { width:22px; height:22px; }
+
+  /* column colours */
+  .c1 .col-head { background:#e67e00; } .c1 .ic { background:#fff2e3; color:#b35c00; }
+  .c2 .col-head { background:var(--navy); } .c2 .ic { background:#e7eef9; color:var(--navy); }
+  .c3 .col-head { background:var(--green); } .c3 .ic { background:#e8f5e6; color:var(--green); }
+  .c4 .col-head { background:#0f7d7b; } .c4 .ic { background:#e0f3f2; color:#0f7d7b; }
+  .c5 .col-head { background:#6b3fa0; } .c5 .ic { background:#f0e9f8; color:#6b3fa0; }
+  .c6 .col-head { background:#c62828; } .c6 .ic { background:#fdecec; color:#c62828; }
+
+  footer { position:absolute; left:36px; right:36px; bottom:26px; display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px; }
+  footer .label { font-weight:800; color:var(--navy); font-size:16px; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  footer .label svg { width:20px; height:20px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#e7eef9; color:var(--navy); font-weight:700; font-size:14px; white-space:nowrap; }
+  .chip svg { width:15px; height:15px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="tri"></div>
+  <header>
+    <h1><i data-lucide="network"></i> System Architecture — AR Safety Trainer</h1>
+    <div class="tag"><b>SIH26041</b> · Government of Jharkhand<br>Input → On-device → Trust → Sync → Server → Output</div>
+  </header>
+
+  <div class="flow">
+    <div class="col c1">
+      <div class="col-head"><span class="n">1</span><div>Input<small>Worker's phone</small></div></div>
+      <div class="boxes">
+        <div class="box"><div class="ic"><i data-lucide="hand"></i></div><div><b>Touch</b><span>Taps, drag-to-equip, quiz answers</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="camera"></i></div><div><b>Camera</b><span>AR placement, CPR hand tracking</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="mic"></i></div><div><b>Microphone</b><span>Voice: "tell me what happened"</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="key-round"></i></div><div><b>Login</b><span>Work ID / mobile + password</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="languages"></i></div><div><b>Language</b><span>Hindi / English (Santali ready)</span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div><i data-lucide="chevron-right"></i></div></div>
+
+    <div class="col c2">
+      <div class="col-head"><span class="n">2</span><div>Worker App<small>Runs on the phone · offline</small></div></div>
+      <div class="boxes">
+        <div class="box"><div class="ic"><i data-lucide="smartphone"></i></div><div><b>App shell</b><span>Vite 8 + JavaScript PWA · Capacitor 8 APK</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="box"></i></div><div><b>3D &amp; AR</b><span>model-viewer · Google Scene Viewer · ARCore + SceneView</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="gamepad-2"></i></div><div><b>Simulations</b><span>three.js drag-to-equip &amp; machinery</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="volume-2"></i></div><div><b>Voice</b><span>Text-to-speech · speech recognition</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="scan-eye"></i></div><div><b>On-device AI</b><span>MediaPipe hand &amp; pose tracking</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="clipboard-check"></i></div><div><b>Quiz engine</b><span>70% pass · results per account</span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div><i data-lucide="chevron-right"></i></div></div>
+
+    <div class="col c3">
+      <div class="col-head"><span class="n">3</span><div>Trust Layer<small>Blockchain-lite, on device</small></div></div>
+      <div class="boxes">
+        <div class="box"><div class="ic"><i data-lucide="link"></i></div><div><b>Hash-chained ledger</b><span>Append-only records in IndexedDB</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="signature"></i></div><div><b>Digital signature</b><span>SHA-256 + ECDSA P-256 (Web Crypto)</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="qr-code"></i></div><div><b>QR certificate</b><span>Scan → VALID / TAMPERED</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="lock"></i></div><div><b>Encryption</b><span>ECDH + AES-GCM for mesh records</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="wifi-off"></i></div><div><b>Offline cache</b><span>Workbox service worker · APK bundle</span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div><i data-lucide="chevron-right"></i></div></div>
+
+    <div class="col c4">
+      <div class="col-head"><span class="n">4</span><div>Sync<small>How data reaches the admin</small></div></div>
+      <div class="boxes">
+        <div class="lane"><i data-lucide="wifi"></i> With internet</div>
+        <div class="box"><div class="ic"><i data-lucide="globe"></i></div><div><b>HTTPS REST API</b><span>JSON · Bearer session token</span></div></div>
+        <div class="lane"><i data-lucide="bluetooth"></i> No internet</div>
+        <div class="box"><div class="ic"><i data-lucide="bluetooth"></i></div><div><b>Bluetooth mesh</b><span>Google Nearby Connections (BLE · Wi-Fi Direct)</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="route"></i></div><div><b>Shortest-hop routing</b><span>Phone → phone → admin · store &amp; forward</span></div></div>
+        <div class="lane"><i data-lucide="file-braces"></i> Manual</div>
+        <div class="box"><div class="ic"><i data-lucide="file-down"></i></div><div><b>Export / import</b><span>Signed JSON bundle</span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div><i data-lucide="chevron-right"></i></div></div>
+
+    <div class="col c5">
+      <div class="col-head"><span class="n">5</span><div>Server<small>Cloud</small></div></div>
+      <div class="boxes">
+        <div class="box"><div class="ic"><i data-lucide="server"></i></div><div><b>Accounts API</b><span>Node.js + Express 5 · Vercel serverless</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="database"></i></div><div><b>Database</b><span>PostgreSQL on Neon</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="shield-check"></i></div><div><b>Security</b><span>scrypt passwords · hashed session tokens · rate limit</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="user-cog"></i></div><div><b>Roles</b><span>Worker · Supervisor · Admin approval</span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div><i data-lucide="chevron-right"></i></div></div>
+
+    <div class="col c6">
+      <div class="col-head"><span class="n">6</span><div>Output<small>Admin &amp; inspectors</small></div></div>
+      <div class="boxes">
+        <div class="box"><div class="ic"><i data-lucide="chart-column"></i></div><div><b>Compliance dashboard</b><span>KPIs · pass rates · most-missed questions</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="radio"></i></div><div><b>Live offline network</b><span>Who sent what, by which path</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="award"></i></div><div><b>Worker certificate</b><span>QR, verifiable anywhere</span></div></div>
+        <div class="box"><div class="ic"><i data-lucide="file-text"></i></div><div><b>Audit report</b><span>Tamper check · grievances</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="label"><i data-lucide="wrench"></i> Hosting &amp; tools</span>
+    <span class="chip"><i data-lucide="git-branch"></i> GitHub</span>
+    <span class="chip"><i data-lucide="triangle"></i> Vercel</span>
+    <span class="chip"><i data-lucide="hammer"></i> Gradle · JDK 21 · Android SDK 36</span>
+    <span class="chip"><i data-lucide="flask-conical"></i> Node test runner</span>
+    <span class="chip"><i data-lucide="palette"></i> Lucide icons · Noto Sans</span>
+    <span class="chip"><i data-lucide="landmark"></i> GIGW / UX4G style</span>
+  </footer>
+</div>
+<script src="../ar-safety-trainer/node_modules/lucide/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons({ attrs: { 'stroke-width': 2 } })</script>
+</body>
+</html>
