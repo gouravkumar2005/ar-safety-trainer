@@ -3,7 +3,7 @@
   "appName": "AR Safety Trainer",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#0b0f17"
+    "backgroundColor": "#ffffff"
   },
   "server": {
     "androidScheme": "https"
@@ -11,7 +11,7 @@
   "plugins": {
     "SplashScreen": {
       "launchAutoHide": false,
-      "backgroundColor": "#0b0f17",
+      "backgroundColor": "#ffffff",
       "showSpinner": false
     }
   }

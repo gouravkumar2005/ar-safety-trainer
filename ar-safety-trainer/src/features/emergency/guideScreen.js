@@ -4,6 +4,8 @@ import { t, pick, getLang } from '../../core/i18n/index.js'
 import { speak, stopSpeaking } from '../../platform/speech.js'
 import { burstConfetti } from '../../shared/ui/confetti.js'
 import { startPoseOverlay, isPoseTrackingSupported } from './poseTracker.js'
+import { icon } from '../../shared/ui/icon.js'
+import { GUIDE_ICONS } from './hubScreen.js'
 
 // Narrated, swipeable step sequence for one emergency guide — same
 // interaction pattern as training/tourScreen.js (progress dots, Pointer Events swipe,
@@ -29,8 +31,8 @@ export function renderEmergencyGuide(main, navigate, params) {
   const guide = findGuideById(params.guideId)
   if (!guide) {
     main.innerHTML = `
-      <button class="btn btn-ghost" id="back">&larr; ${t('emergencyBackToHub')}</button>
-      <div class="result-box result-warn" style="margin-top:14px;"><p>${t('emergencyGuideNotFound')}</p></div>
+      <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('emergencyBackToHub')}</button>
+      <div class="result-box result-warn">${icon('circle-alert', { size: 22 })}<p>${t('emergencyGuideNotFound')}</p></div>
     `
     main.querySelector('#back').addEventListener('click', () => navigate(`#/module/${EMERGENCY_RESPONSE_MODULE_ID}`))
     return
@@ -42,17 +44,23 @@ export function renderEmergencyGuide(main, navigate, params) {
   let poseController = null
 
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${pick(guide.title)}</button>
-    <div class="progress-dots" aria-hidden="true" style="margin-top:14px;" id="eg-dots"></div>
-    <div id="eg-swipe-zone">
-      <p class="hint" id="eg-step-of"></p>
-      <div class="module-card" id="eg-text" style="margin-top:6px;"></div>
-      <div id="eg-extras" style="margin-top:12px;"></div>
-      <p class="hint">${t('tourSwipeHint')}</p>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('emergencyBackToHub')}</button>
+    <div class="page-head">
+      <span class="head-icon is-red">${icon(GUIDE_ICONS[guide.id] || 'hand-heart', { size: 30 })}</span>
+      <div><h2>${pick(guide.title)}</h2><p id="eg-step-of"></p></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn" id="eg-prev" style="flex:1;">${t('tourPrev')}</button>
-      <button class="btn btn-primary" id="eg-next" style="flex:1;">${t('next')}</button>
+    <div class="progress-dots" aria-hidden="true" id="eg-dots"></div>
+    <div id="eg-swipe-zone">
+      <div class="module-card tour-card" id="eg-text"></div>
+      <div id="eg-extras" class="mt-12"></div>
+      <div class="hint-icons">
+        <span>${icon('hand', { size: 16 })} ${t('tourSwipeHint')}</span>
+        <span>${icon('volume-2', { size: 16 })} ${t('hintAutoVoice')}</span>
+      </div>
+    </div>
+    <div class="btn-row mt-12">
+      <button class="btn" id="eg-prev">${icon('arrow-left', { size: 20 })} ${t('tourPrev')}</button>
+      <button class="btn btn-primary" id="eg-next"></button>
     </div>
   `
 
@@ -96,15 +104,15 @@ export function renderEmergencyGuide(main, navigate, params) {
     stepOfRoot.textContent = t('emergencyStepOf', { n: index + 1, total: steps.length })
 
     textRoot.innerHTML = `
-      <h3 class="card-h3" style="font-size:1rem;margin:0 0 8px;">${pick(step.title)}</h3>
-      <p style="margin:0;line-height:1.5;">${pick(step.info)}</p>
+      <h3><span class="badge badge-bad">${index + 1}</span> ${pick(step.title)}</h3>
+      <p>${pick(step.info)}</p>
     `
 
     extrasRoot.innerHTML = ''
     if (step.cameraAssist) {
       const btn = document.createElement('button')
       btn.className = 'btn btn-accent btn-block'
-      btn.textContent = t('emergencyCameraAssistBtn')
+      btn.innerHTML = `${icon('camera', { size: 22 })} ${t('emergencyCameraAssistBtn')}`
       btn.addEventListener('click', () => {
         stopSpeaking()
         clearTimeout(advanceTimer)
@@ -116,7 +124,9 @@ export function renderEmergencyGuide(main, navigate, params) {
     }
 
     prevBtn.disabled = index === 0
-    nextBtn.textContent = index === steps.length - 1 ? t('tourFinishBtn') : t('next')
+    nextBtn.innerHTML = index === steps.length - 1
+      ? `${icon('check', { size: 20 })} ${t('tourFinishBtn')}`
+      : `${t('next')} ${icon('chevron-right', { size: 20 })}`
 
     speak(`${pick(step.title)}. ${pick(step.info)}`, getLang(), () => {
       if (myRenderId !== renderId) return
@@ -141,9 +151,9 @@ export function renderEmergencyGuide(main, navigate, params) {
     if (!isPoseTrackingSupported()) return // silently omit — core guide works fully without it
 
     wrap.innerHTML = `
-      <button class="btn btn-block" id="pose-toggle-btn">${t('emergencyPoseAssistBtn')}</button>
-      <p class="hint" style="margin-top:6px;">${t('emergencyPoseAssistNote')}</p>
-      <div id="pose-video-area" style="margin-top:10px;"></div>
+      <button class="btn btn-block" id="pose-toggle-btn">${icon('camera', { size: 22 })} ${t('emergencyPoseAssistBtn')}</button>
+      <p class="hint">${t('emergencyPoseAssistNote')}</p>
+      <div id="pose-video-area" class="mt-8"></div>
     `
     extrasRoot.appendChild(wrap)
 
@@ -223,12 +233,14 @@ export function renderEmergencyGuide(main, navigate, params) {
     stopSpeaking()
     stopPoseOverlay()
     main.innerHTML = `
-      <div class="result-box result-valid" id="eg-complete">
-        <h4>${pick(guide.title)}</h4>
+      <div class="big-status is-good" id="eg-complete">
+        <span class="big-icon">${icon('hand-heart', { size: 48 })}</span>
+        <strong>${pick(guide.title)}</strong>
         <p>${t('emergencyCompleteBody')}</p>
       </div>
-      <div class="stack" style="margin-top:16px;">
-        <button class="btn btn-block" id="eg-done-btn">${t('emergencyBackToHub')}</button>
+      <div class="stack mt-16">
+        <a class="btn btn-sos btn-block" href="tel:108">${icon('phone', { size: 22 })} ${t('callAmbulance')}</a>
+        <button class="btn btn-block" id="eg-done-btn">${icon('siren', { size: 22 })} ${t('emergencyBackToHub')}</button>
       </div>
     `
     main.querySelector('#eg-done-btn').addEventListener('click', () => navigate(`#/module/${EMERGENCY_RESPONSE_MODULE_ID}`))

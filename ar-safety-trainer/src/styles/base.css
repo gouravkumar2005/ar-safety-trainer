@@ -1,25 +1,45 @@
 /* Design tokens, reset, page layout, focus styles, typography helpers,
-   and screen-transition animation. Loaded first. */
+   and screen-transition animation. Loaded first.
+
+   Look: a Government of India / Jharkhand service app (GIGW 3.0 and UX4G
+   conventions) — white, navy primary, tricolour accents, flat cards,
+   icon-first. Light mode only. Every text colour below is at least 4.5:1
+   on white and on --bg (WCAG 2.1 AA 1.4.3); --border-strong is at least
+   3:1 for input and button outlines (1.4.11). */
 
 :root {
-  --bg: #0b0f17;
-  --surface: #131a26;
-  --surface-2: #1b2433;
-  /* WCAG 2.1 1.4.11 (non-text contrast, needs 3.0:1) — the old #263143
-     measured 1.33:1 against --surface / 1.46:1 against --bg, a real fail
-     for card/input borders. This clears both (3.52 / 3.87) — borders are
-     now genuinely visible instead of barely-there; that's an intentional
-     look change, not just an invisible compliance tweak. */
-  --border: #5c7099;
-  --text: #eef2f7;
-  --text-dim: #9aa7bb;
-  --accent: #ffb020;
-  --accent-2: #0b5fff;
-  --good: #2fbf71;
-  --bad: #ef4444;
-  --radius: 14px;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color-scheme: dark;
+  /* Surfaces */
+  --bg: #f4f6fa;           /* page tint */
+  --surface: #ffffff;      /* cards */
+  --surface-2: #eef2f8;    /* inputs, sunken areas, 3D viewer */
+  --border: #d5dbe5;       /* decorative card dividers */
+  --border-strong: #7b879c;/* inputs + outlined buttons: 3.6:1 on white */
+
+  /* Text */
+  --text: #1a1a1a;
+  --text-dim: #5b6475;     /* 6.0:1 on white */
+
+  /* Government palette */
+  --navy: #0b3d91;         /* primary actions, header: 10:1 on white */
+  --navy-soft: #e7eef9;
+  --saffron: #ff9933;      /* flag saffron: fills only, never text */
+  --saffron-soft: #fff2e3;
+  --india-green: #138808;  /* flag green: 4.6:1 as text */
+  --green-soft: #e8f5e6;
+
+  /* Semantic (old names kept so feature CSS keeps working) */
+  --accent: var(--saffron);
+  --accent-text: #b35c00;  /* saffron-family text: 4.7:1 */
+  --accent-2: var(--navy);
+  --good: var(--india-green);
+  --bad: #c62828;          /* 5.6:1 */
+  --bad-soft: #fdecec;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+
+  font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color-scheme: light;
   font-size: 100%; /* baseline for the rem-based text-size toggle below */
 }
 
@@ -42,6 +62,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #app {
@@ -50,37 +71,37 @@ html, body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--bg);
 }
 
+.icon { flex: none; display: inline-block; vertical-align: middle; }
 
-/* WCAG 2.4.7 (Focus Visible) — no rule existed before, so visibility
-   depended entirely on each browser's inconsistent default outline
-   against a dark theme. This applies one explicit, high-contrast style
+/* WCAG 2.4.7 (Focus Visible): one explicit, high-contrast style
    everywhere a keyboard user can land. */
 .btn:focus-visible,
+.icon-btn:focus-visible,
+.tile:focus-visible,
 .option:focus-visible,
 .hotspot-btn:focus-visible,
+.brand:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--navy);
   outline-offset: 2px;
 }
 
-main { flex: 1; padding: 16px 18px 32px; }
+main { flex: 1; padding: 16px 16px 32px; }
 
-.h2-title { font-size: 1.1875rem; }
-.subtitle-dim { font-size: 0.8125rem; color: var(--text-dim); }
-.text-xs-dim { font-size: 0.75rem; color: var(--text-dim); }
-.card-h3 { font-size: 0.875rem; }
+.h2-title { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+.subtitle-dim { font-size: 0.875rem; color: var(--text-dim); }
+.text-xs-dim { font-size: 0.8125rem; color: var(--text-dim); }
+.card-h3 { font-size: 0.9375rem; font-weight: 700; }
 
 .stack { display: flex; flex-direction: column; gap: 10px; }
 
 /* Screen-to-screen navigation (app/router.js wraps render() in
-   document.startViewTransition when the browser supports it — this just
-   customizes the default cross-fade so it reads as deliberate rather than
-   a bare browser default. Unsupported browsers simply never generate
-   these pseudo-elements, so nothing here affects them. */
+   document.startViewTransition when the browser supports it). */
 ::view-transition-old(root) {
   animation: viewFadeOut 0.2s ease-in both;
 }

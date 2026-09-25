@@ -7,6 +7,7 @@ import { speak, stopSpeaking } from '../../platform/speech.js'
 import { startPlacementScene } from '../../shared/three/xrPlacementScene.js'
 import { buildMannequin } from '../../shared/three/proceduralModels.js'
 import { burstConfetti } from '../../shared/ui/confetti.js'
+import { icon, ITEM_ICONS } from '../../shared/ui/icon.js'
 
 // Interactive drag-to-equip AR sim, replacing the plain swipe-through
 // tour for PPE Compliance. See the plan
@@ -20,13 +21,6 @@ import { burstConfetti } from '../../shared/ui/confetti.js'
 // `consequence` field).
 
 const DROP_THRESHOLD_PX = 60
-const CHIP_EMOJI = {
-  'ppe-helmet': '⛑️',
-  'ppe-scsr': '🫁',
-  'ppe-vest': '🦺',
-  'ppe-boots': '🥾',
-  'ppe-gas-detector': '📟',
-}
 const AUTO_ADVANCE_PAUSE_AFTER_SPEECH_MS = 600
 const AUTO_ADVANCE_FALLBACK_MS = 5500
 
@@ -34,21 +28,21 @@ export function renderPpeEquipSim(main, navigate) {
   const mod = getModule('ppe-compliance')
 
   main.innerHTML = `
-    <div id="sim-root" style="position:relative;width:100%;height:calc(100dvh - 140px);min-height:420px;border-radius:14px;overflow:hidden;background:#000;">
-      <video id="sim-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;"></video>
-      <canvas id="sim-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
-      <div id="sim-overlay" style="position:absolute;inset:0;pointer-events:none;">
-        <button class="btn btn-ghost" id="sim-back" style="position:absolute;top:10px;left:10px;pointer-events:auto;">&larr; ${t('backToModules')}</button>
-        <span class="badge badge-active" id="sim-backend-badge" style="position:absolute;top:10px;right:10px;"></span>
-        <button class="btn" id="sim-recenter" hidden style="position:absolute;top:46px;right:10px;pointer-events:auto;">${t('arSimRecenterBtn')}</button>
-        <div id="sim-marker" class="hotspot-btn" style="position:fixed;display:none;pointer-events:none;transform:translate(-50%,-50%);"></div>
-        <p class="hint" id="sim-hint" style="position:absolute;left:0;right:0;bottom:96px;text-align:center;color:#fff;text-shadow:0 1px 3px #000;margin:0;padding:0 12px;"></p>
-        <div id="sim-caption" class="sheet" style="position:absolute;left:8px;right:8px;bottom:8px;display:none;pointer-events:auto;"></div>
-        <div id="sim-tray" style="position:absolute;left:0;right:0;bottom:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 8px;pointer-events:auto;"></div>
+    <div id="sim-root" class="sim-stage">
+      <video id="sim-video" class="sim-fill sim-video" autoplay playsinline muted></video>
+      <canvas id="sim-canvas" class="sim-fill"></canvas>
+      <div id="sim-overlay" class="sim-fill sim-overlay">
+        <button class="back-btn sim-back" id="sim-back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
+        <span class="badge badge-active sim-badge" id="sim-backend-badge"></span>
+        <button class="icon-btn sim-recenter" id="sim-recenter" hidden aria-label="${t('arSimRecenterBtn')}" title="${t('arSimRecenterBtn')}">${icon('map-pin', { size: 22 })}</button>
+        <div id="sim-marker" class="hotspot-btn sim-marker"></div>
+        <p id="sim-hint" class="sim-hint"></p>
+        <div id="sim-caption" class="sheet sim-caption"></div>
+        <div id="sim-tray" class="sim-tray"></div>
       </div>
     </div>
-    <p class="hint" id="sim-illustrative-note" style="margin-top:8px;"></p>
-    <button class="btn btn-ghost btn-block" id="sim-use-tour" style="margin-top:8px;">${t('arSimUseSimpleTourBtn')}</button>
+    <p class="note" id="sim-illustrative-note"></p>
+    <button class="btn btn-block mt-8" id="sim-use-tour">${icon('list-checks', { size: 20 })} ${t('arSimUseSimpleTourBtn')}</button>
   `
 
   const root = main.querySelector('#sim-root')
@@ -166,12 +160,12 @@ export function renderPpeEquipSim(main, navigate) {
     trayEl.innerHTML = ''
     ppeItems.forEach((item, i) => {
       const chip = document.createElement('div')
-      chip.className = 'btn ppe-chip'
+      chip.className = `btn ppe-chip ${i < currentIndex ? 'is-done' : ''}`
       chip.style.touchAction = 'none'
       chip.style.opacity = i === currentIndex ? '1' : i < currentIndex ? '0.35' : '0.6'
       chip.style.cursor = i === currentIndex ? 'grab' : 'default'
       chip.dataset.active = i === currentIndex ? 'true' : 'false'
-      chip.innerHTML = `<div style="font-size:1.4rem;">${i < currentIndex ? '✅' : CHIP_EMOJI[item.id] || '🔧'}</div><div style="font-size:0.65rem;">${pick(item.title)}</div>`
+      chip.innerHTML = `${icon(i < currentIndex ? 'circle-check' : ITEM_ICONS[item.id] || 'box', { size: 26 })}<span class="chip-label">${pick(item.title)}</span>`
       if (i === currentIndex) attachDrag(chip, item)
       trayEl.appendChild(chip)
     })
@@ -255,7 +249,7 @@ export function renderPpeEquipSim(main, navigate) {
     hintEl.textContent = ''
     captionEl.style.display = 'block'
     captionEl.innerHTML = `
-      <h4>${pick(item.title)} — ${t('arSimEquippedLabel')}</h4>
+      <h4>${icon('circle-check', { size: 20, cls: 'status-good' })} ${pick(item.title)} — ${t('arSimEquippedLabel')}</h4>
       <p>${pick(item.consequence)}</p>
     `
     burstConfetti(main)
@@ -283,13 +277,14 @@ export function renderPpeEquipSim(main, navigate) {
     stopSpeaking()
     scenePromise.then((scene) => scene?.stop())
     main.innerHTML = `
-      <div class="result-box result-valid" id="ppe-sim-complete">
-        <h4>${t('tourCompleteTitlePpe')}</h4>
+      <div class="big-status is-good" id="ppe-sim-complete">
+        <span class="big-icon">${icon('trophy', { size: 48 })}</span>
+        <strong>${t('tourCompleteTitlePpe')}</strong>
         <p>${t('tourCompleteBodyPpe')}</p>
       </div>
-      <div class="stack" style="margin-top:16px;">
-        <button class="btn btn-accent btn-block" id="sim-quiz-btn">${t('takeQuiz')}</button>
-        <button class="btn btn-block" id="sim-done-btn">${t('backToModules')}</button>
+      <div class="stack mt-16">
+        <button class="btn btn-primary btn-block" id="sim-quiz-btn">${icon('clipboard-check', { size: 22 })} ${t('takeQuiz')}</button>
+        <button class="btn btn-block" id="sim-done-btn">${icon('house', { size: 22 })} ${t('backToModules')}</button>
       </div>
     `
     main.querySelector('#sim-quiz-btn').addEventListener('click', () => navigate(`#/module/${mod.id}/quiz`))

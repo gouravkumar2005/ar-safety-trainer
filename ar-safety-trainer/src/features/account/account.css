@@ -3,14 +3,20 @@
 .account-card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-top: 4px solid var(--navy);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 18px 16px;
   margin-bottom: 14px;
 }
 .account-section {
-  font-size: 0.875rem;
-  color: var(--accent);
-  margin: 20px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 22px 0 12px;
 }
 .account-switch {
   display: flex;
@@ -18,55 +24,78 @@
   justify-content: center;
   gap: 4px;
   flex-wrap: wrap;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-dim);
   margin: 14px 0 0;
 }
+/* The "Emergency? No login needed" tile on the login screen. */
 .account-emergency {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
+  min-height: 60px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--bad);
+  border-radius: var(--radius);
+  background: var(--bad-soft);
+  color: var(--bad);
   text-align: left;
   cursor: pointer;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 .account-logout { border-color: var(--bad); color: var(--bad); margin-top: 4px; }
 
-/* Role picker: large tap targets with a one-line description each. */
+/* Role picker: three big picture cards. */
 .role-choices { border: 0; padding: 0; margin: 0 0 14px; }
-.role-choices legend { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
+.role-choices legend { font-size: 0.8125rem; font-weight: 700; margin-bottom: 8px; }
+.role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .role-choices .role-choice { /* outranks ".field label" */
+  position: relative;
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-2);
-  margin-bottom: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 6px 12px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
   cursor: pointer;
+  margin: 0;
 }
-.role-choice:has(input:checked) { border-color: var(--accent-2); background: rgba(11,95,255,0.12); }
-.role-choice input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
-.role-choice span { display: flex; flex-direction: column; gap: 2px; }
-.role-choice strong { font-size: 0.9375rem; }
-.role-choice small { font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; }
+.role-choice:has(input:checked) { border-color: var(--navy); background: var(--navy-soft); box-shadow: 0 0 0 2px var(--navy); }
+.role-choice:has(input:focus-visible) { outline: 3px solid var(--navy); outline-offset: 2px; }
+.role-choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.role-choice .role-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2); color: var(--navy);
+}
+.role-choice:has(input:checked) .role-icon { background: var(--navy); color: #fff; }
+.role-choice strong { font-size: 0.8125rem; line-height: 1.25; }
 
 .profile-head { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.profile-head h2 { margin: 0; font-size: 1.125rem; }
 .profile-avatar {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--accent);
-  color: #1a1300;
-  font-weight: 700;
-  font-size: 1.125rem;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.25rem;
   flex: none;
+  border: 3px solid var(--saffron);
 }
 
 .user-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.user-filters [aria-selected="true"] { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+.user-filters .btn { min-height: 38px; padding: 6px 12px; font-size: 0.8125rem; }
+.user-filters [aria-selected="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
 .user-card h3 small { font-size: 0.75rem; color: var(--text-dim); font-weight: 400; }
 .user-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.user-actions .btn { min-height: 40px; padding: 6px 12px; font-size: 0.8125rem; }

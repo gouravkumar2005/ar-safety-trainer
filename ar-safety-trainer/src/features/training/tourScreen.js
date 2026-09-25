@@ -3,6 +3,7 @@ import { getItemGallery } from '../../content/itemGalleries.js'
 import { t, pick, getLang } from '../../core/i18n/index.js'
 import { speak, stopSpeaking } from '../../platform/speech.js'
 import { burstConfetti } from '../../shared/ui/confetti.js'
+import { icon } from '../../shared/ui/icon.js'
 
 // Guided, swipeable, auto-narrated walkthrough. Two modes, chosen by what
 // the module actually has (no new content authored for this — it reuses
@@ -52,16 +53,19 @@ export function renderTour(main, navigate, params) {
   let advanceTimer = null
 
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${pick(mod.title)}</button>
-    <div class="progress-dots" aria-hidden="true" style="margin-top:14px;" id="tour-dots"></div>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${pick(mod.shortTitle || mod.title)}</button>
+    <div class="progress-dots mt-8" aria-hidden="true" id="tour-dots"></div>
     <div id="tour-swipe-zone">
-      <div class="viewer-wrap" style="margin-top:10px;" id="tour-viewer"></div>
-      <p class="hint">${t('tourSwipeHint')}</p>
-      <div class="module-card" id="tour-text" style="margin-top:12px;"></div>
+      <div class="viewer-wrap" id="tour-viewer"></div>
+      <div class="hint-icons">
+        <span>${icon('hand', { size: 16 })} ${t('tourSwipeHint')}</span>
+        <span>${icon('volume-2', { size: 16 })} ${t('hintAutoVoice')}</span>
+      </div>
+      <div class="module-card tour-card mt-12" id="tour-text"></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn" id="tour-prev" style="flex:1;">${t('tourPrev')}</button>
-      <button class="btn btn-primary" id="tour-next" style="flex:1;">${t('next')}</button>
+    <div class="btn-row mt-12">
+      <button class="btn" id="tour-prev">${icon('arrow-left', { size: 20 })} ${t('tourPrev')}</button>
+      <button class="btn btn-primary" id="tour-next"></button>
     </div>
   `
 
@@ -137,12 +141,14 @@ export function renderTour(main, navigate, params) {
     }
 
     textRoot.innerHTML = `
-      <h3 class="card-h3" style="font-size:1rem;margin:0 0 8px;">${pick(step.title)}</h3>
-      <p style="margin:0;line-height:1.5;">${pick(step.info)}</p>
+      <h3><span class="badge badge-info">${index + 1}/${steps.length}</span> ${pick(step.title)}</h3>
+      <p>${pick(step.info)}</p>
     `
 
     prevBtn.disabled = index === 0
-    nextBtn.textContent = index === steps.length - 1 ? t('tourFinishBtn') : t('next')
+    nextBtn.innerHTML = index === steps.length - 1
+      ? `${icon('check', { size: 20 })} ${t('tourFinishBtn')}`
+      : `${t('next')} ${icon('chevron-right', { size: 20 })}`
 
     speak(`${pick(step.title)}. ${pick(step.info)}`, getLang(), () => {
       if (myRenderId !== renderId) return // stale — user already moved on
@@ -201,18 +207,19 @@ export function renderTour(main, navigate, params) {
     const bodyKey = itemMode ? 'tourCompleteBodyPpe' : 'tourCompleteBodyMachinery'
     const s = mod.scale ?? 1
     main.innerHTML = `
-      <div class="result-box result-valid" id="tour-complete">
-        <h4>${t(titleKey)}</h4>
+      <div class="big-status is-good" id="tour-complete">
+        <span class="big-icon">${icon('trophy', { size: 48 })}</span>
+        <strong>${t(titleKey)}</strong>
         <p>${t(bodyKey)}</p>
       </div>
       ${itemMode ? `
-        <div class="viewer-wrap" style="margin-top:14px;">
+        <div class="viewer-wrap mt-12">
           <model-viewer src="${mod.model}" alt="${pick(mod.title)}" scale="${s} ${s} ${s}" camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look"></model-viewer>
         </div>
       ` : ''}
-      <div class="stack" style="margin-top:16px;">
-        <button class="btn btn-accent btn-block" id="tour-quiz-btn">${t('takeQuiz')}</button>
-        <button class="btn btn-block" id="tour-done-btn">${t('backToModules')}</button>
+      <div class="stack mt-16">
+        <button class="btn btn-primary btn-block" id="tour-quiz-btn">${icon('clipboard-check', { size: 22 })} ${t('takeQuiz')}</button>
+        <button class="btn btn-block" id="tour-done-btn">${icon('house', { size: 22 })} ${t('backToModules')}</button>
       </div>
     `
     main.querySelector('#tour-quiz-btn').addEventListener('click', () => navigate(`#/module/${mod.id}/quiz`))

@@ -1,28 +1,54 @@
 /* Training feature: quiz questions/options and the result score ring. */
 
-.question { font-size: 1.0625rem; font-weight: 600; margin-bottom: 18px; line-height: 1.4; }
+.question { font-size: 1.1875rem; font-weight: 700; margin-bottom: 14px; line-height: 1.4; }
+.q-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.q-count { font-size: 0.8125rem; font-weight: 700; color: var(--navy); background: var(--navy-soft); padding: 4px 10px; border-radius: 999px; }
+
 .option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
+  min-height: 60px;
   text-align: left;
-  padding: 14px 16px;
+  padding: 12px 14px;
   margin-bottom: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  border-radius: 10px;
+  border: 1.5px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.875rem;
+  font: inherit;
+  font-size: 0.9375rem;
   cursor: pointer;
 }
 .option:active { transform: scale(0.98); }
-.option.selected { border-color: var(--accent-2); background: rgba(11,95,255,0.12); }
-.option.correct { border-color: var(--good); background: rgba(47,191,113,0.12); }
-.option.incorrect { border-color: var(--bad); background: rgba(239,68,68,0.12); }
+/* Big letter circle (A/B/C/D) — a picture-like anchor for each choice. */
+.option-key {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--surface-2);
+  color: var(--navy);
+  font-weight: 800;
+}
+.option-text { flex: 1; }
+.option-mark { flex: none; line-height: 0; }
+.option.selected { border-color: var(--navy); background: var(--navy-soft); }
+.option.selected .option-key { background: var(--navy); color: #fff; }
+.option.correct { border-color: var(--india-green); background: var(--green-soft); }
+.option.correct .option-key { background: var(--india-green); color: #fff; }
+.option.correct .option-mark { color: var(--india-green); }
+.option.incorrect { border-color: var(--bad); background: var(--bad-soft); }
+.option.incorrect .option-key { background: var(--bad); color: #fff; }
+.option.incorrect .option-mark { color: var(--bad); }
 
 .score-ring-wrap {
   position: relative;
-  width: 140px; height: 140px;
-  margin: 24px auto;
+  width: 150px; height: 150px;
+  margin: 12px auto;
 }
 .score-ring-text {
   position: absolute;
@@ -30,6 +56,9 @@
   display: flex; align-items: center; justify-content: center;
   flex-direction: column;
 }
-.score-ring-text strong { font-size: 1.875rem; }
-.score-ring-text span { font-size: 0.75rem; color: var(--text-dim); }
+.score-ring-text strong { font-size: 2rem; font-weight: 800; }
+.score-ring-text span { font-size: 0.8125rem; color: var(--text-dim); font-weight: 600; }
 
+/* Tour step card: icon + title + short text. */
+.tour-card h3 { font-size: 1.0625rem; }
+.tour-card p { color: var(--text); font-size: 0.9375rem; }

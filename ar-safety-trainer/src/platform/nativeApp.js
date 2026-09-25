@@ -22,7 +22,7 @@ export function initNativeApp() {
   })
 
   StatusBar.setStyle({ style: Style.Dark }).catch(() => {})
-  StatusBar.setBackgroundColor({ color: '#0b0f17' }).catch(() => {})
+  StatusBar.setBackgroundColor({ color: '#0b3d91' }).catch(() => {})
 
   interceptModelViewerArButtons()
 

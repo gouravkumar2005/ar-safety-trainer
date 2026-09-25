@@ -1,22 +1,41 @@
-/* Certificates feature: the issued certificate card. */
+/* Certificates feature: the issued certificate, styled like a government
+   certificate — white paper, tricolour top edge, navy seal. */
 
 .cert-card {
-  background: linear-gradient(160deg, var(--surface), var(--surface-2));
+  position: relative;
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  box-shadow: var(--shadow);
+  padding: 22px 18px 18px;
   text-align: center;
+  overflow: hidden;
   /* Replays automatically every time a cert is generated, since
-     certificate.js creates a fresh element via innerHTML each time —
-     no JS needed to trigger it. */
+     certificate.js creates a fresh element via innerHTML each time. */
   animation: certReveal 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+.cert-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--saffron) 0 33.33%, #fff 33.33% 66.66%, var(--india-green) 66.66%);
 }
 @keyframes certReveal {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
 }
-.cert-card img { border-radius: 10px; background: #fff; padding: 8px; margin: 14px auto; display: block; }
-.cert-card .cert-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
-.cert-card .cert-value { font-size: 0.9375rem; font-weight: 600; margin-bottom: 10px; }
-.cert-card .cert-value-lg { font-size: 1.25rem; }
-
+.cert-seal {
+  width: 64px; height: 64px; margin: 6px auto 8px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--navy); color: #fff;
+  border: 3px solid var(--saffron);
+}
+.cert-gov { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.04em; }
+.cert-card h3 { margin: 4px 0 14px; font-size: 1.125rem; color: var(--navy); font-weight: 800; }
+.cert-card img { border-radius: 8px; background: #fff; padding: 8px; margin: 12px auto; display: block; border: 1px solid var(--border); }
+.cert-card .cert-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 700; }
+.cert-card .cert-value { font-size: 0.9375rem; font-weight: 700; margin-bottom: 10px; }
+.cert-card .cert-value-lg { font-size: 1.375rem; font-weight: 800; }
+.cert-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 10px; text-align: center; }

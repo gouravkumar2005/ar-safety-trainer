@@ -2,6 +2,7 @@ import { EMERGENCY_RESPONSE_MODULE_ID } from '../../content/modules.js'
 import { t } from '../../core/i18n/index.js'
 import { startHandTracking, isHandTrackingSupported } from './handTracker.js'
 import { tone } from '../../shared/ui/sound.js'
+import { icon } from '../../shared/ui/icon.js'
 
 // Live camera + real hand-motion-derived CPR rate. Everything shown here
 // comes from actually detected motion (see handTracker.js) — there is no
@@ -15,9 +16,11 @@ const REFERENCE_BPM = 110
 
 export function renderCprCameraAssist(main, navigate) {
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${t('emergencyBackToHub')}</button>
-    <h2 class="h2-title" style="margin:12px 0 4px;">${t('emergencyCameraAssistHeading')}</h2>
-    <p class="subtitle-dim" style="margin:0 0 14px;">${t('emergencyCameraAssistNote')}</p>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
+    <div class="page-head">
+      <span class="head-icon is-red">${icon('heart-pulse', { size: 30 })}</span>
+      <div><h2>${t('emergencyCameraAssistHeading')}</h2></div>
+    </div>
 
     <div id="camera-area"></div>
   `
@@ -40,23 +43,24 @@ export function renderCprCameraAssist(main, navigate) {
   }
 
   if (!isHandTrackingSupported()) {
-    area.innerHTML = `<div class="result-box result-warn"><p>${t('emergencyCameraPermissionDenied')}</p></div>`
+    area.innerHTML = `<div class="result-box result-warn">${icon('camera', { size: 22 })}<p>${t('emergencyCameraPermissionDenied')}</p></div>`
     return
   }
 
   area.innerHTML = `
-    <div class="viewer-wrap" style="border-radius:14px;overflow:hidden;background:#000;position:relative;">
+    <div class="viewer-wrap" style="border-radius:10px;overflow:hidden;background:#000;position:relative;">
       <video id="cpr-video" autoplay playsinline muted style="width:100%;display:block;transform:scaleX(-1);"></video>
     </div>
-    <div class="module-card" style="margin-top:14px;text-align:center;">
-      <p class="hint" style="margin:0 0 4px;">${t('emergencyCameraTargetBand')}</p>
-      <div id="rate-display" style="font-size:2.2rem;font-weight:700;">—</div>
+    <div class="module-card mt-12" style="text-align:center;">
+      <span class="badge badge-bad" style="margin:0 auto;">${icon('heart-pulse', { size: 14 })} ${t('emergencyCameraTargetBand')}</span>
+      <div id="rate-display" style="font-size:2.4rem;font-weight:800;color:var(--bad);">—</div>
       <p class="hint" id="rate-unit" style="margin:2px 0 10px;">${t('emergencyCameraRateUnit')}</p>
       <div style="height:10px;border-radius:6px;background:var(--border);overflow:hidden;">
         <div id="amplitude-bar" style="height:100%;width:0%;background:var(--accent-2);transition:width 0.1s linear;"></div>
       </div>
       <p class="hint" id="confidence-note" style="margin-top:10px;min-height:1em;"></p>
     </div>
+    <p class="note">${icon('info', { size: 16 })} ${t('emergencyCameraAssistNote')}</p>
   `
 
   const video = area.querySelector('#cpr-video')
@@ -92,7 +96,7 @@ export function renderCprCameraAssist(main, navigate) {
       })
 
       if (!handController) {
-        area.innerHTML = `<div class="result-box result-warn"><p>${t('emergencyCameraPermissionDenied')}</p></div>`
+        area.innerHTML = `<div class="result-box result-warn">${icon('camera', { size: 22 })}<p>${t('emergencyCameraPermissionDenied')}</p></div>`
         return
       }
 
@@ -102,6 +106,6 @@ export function renderCprCameraAssist(main, navigate) {
       beepTimer = setInterval(() => tone(880, 0.06, 'sine', 0.1), intervalMs)
     })
     .catch(() => {
-      area.innerHTML = `<div class="result-box result-warn"><p>${t('emergencyCameraPermissionDenied')}</p></div>`
+      area.innerHTML = `<div class="result-box result-warn">${icon('camera', { size: 22 })}<p>${t('emergencyCameraPermissionDenied')}</p></div>`
     })
 }

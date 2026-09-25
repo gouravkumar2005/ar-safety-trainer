@@ -28,6 +28,8 @@ export const modules = [
     domain: 'ppe-compliance',
     status: 'active',
     title: { en: 'PPE Compliance Check', hi: 'व्यक्तिगत सुरक्षा उपकरण (PPE) जांच' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'Safety Gear (PPE)', hi: 'सुरक्षा उपकरण' },
     summary: {
       en: 'Confirm you have the right protective gear before entering any work area.',
       hi: 'किसी भी कार्य क्षेत्र में जाने से पहले सही सुरक्षा उपकरण की पुष्टि करें।',
@@ -169,6 +171,8 @@ export const modules = [
     domain: 'fire-explosion',
     status: 'locked',
     title: { en: 'Fire & Explosion Response', hi: 'आग और विस्फोट से बचाव' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'Fire', hi: 'आग' },
     summary: {
       en: 'Waiting for a real fire/explosion 3D model.',
       hi: '3D मॉडल की प्रतीक्षा है।',
@@ -181,6 +185,8 @@ export const modules = [
     domain: 'gas-leak',
     status: 'locked',
     title: { en: 'Gas Leak & Confined Space', hi: 'गैस रिसाव और संकुचित स्थान' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'Gas Leak', hi: 'गैस रिसाव' },
     summary: { en: 'Waiting for a 3D model.', hi: '3D मॉडल की प्रतीक्षा है।' },
     model: null,
     nsqf: null,
@@ -190,6 +196,8 @@ export const modules = [
     domain: 'machinery-safety',
     status: 'active',
     title: { en: 'Machinery Safety', hi: 'मशीनरी सुरक्षा' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'Machines', hi: 'मशीनें' },
     summary: {
       en: 'Operate and maintain a continuous miner safely — gas monitoring, mechanical, electrical, and roof-fall hazards.',
       hi: 'कंटीन्यूअस माइनर को सुरक्षित रूप से चलाएँ और उसका रखरखाव करें — गैस निगरानी, यांत्रिक, विद्युत और छत-गिरने के खतरे।',
@@ -314,6 +322,8 @@ export const modules = [
     domain: 'chemical-hazard',
     status: 'locked',
     title: { en: 'Chemical Hazard Handling', hi: 'रासायनिक खतरा प्रबंधन' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'Chemicals', hi: 'रसायन' },
     summary: { en: 'Waiting for a 3D model.', hi: '3D मॉडल की प्रतीक्षा है।' },
     model: null,
     nsqf: null,
@@ -323,6 +333,8 @@ export const modules = [
     domain: 'emergency-response',
     status: 'active',
     title: { en: 'Emergency Response Procedures', hi: 'आपातकालीन प्रतिक्रिया प्रक्रिया' },
+    // Tile label on the home grid: one or two words, picture does the rest.
+    shortTitle: { en: 'First Aid', hi: 'प्राथमिक चिकित्सा' },
     summary: {
       en: 'Say what happened, or pick from the list — get voice-guided first-aid steps.',
       hi: 'क्या हुआ बताएं, या सूची से चुनें — वॉइस-निर्देशित प्राथमिक चिकित्सा चरण पाएं।',

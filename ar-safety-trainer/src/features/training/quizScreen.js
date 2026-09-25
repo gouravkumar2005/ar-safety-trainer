@@ -3,6 +3,9 @@ import { t, pick, getLang } from '../../core/i18n/index.js'
 import { recordResult } from '../../core/state.js'
 import { speak, stopSpeaking } from '../../platform/speech.js'
 import { playCorrect, playIncorrect } from '../../shared/ui/sound.js'
+import { icon } from '../../shared/ui/icon.js'
+
+const KEYS = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export function renderQuiz(main, navigate, params) {
   const mod = getModule(params.id)
@@ -19,17 +22,19 @@ export function renderQuiz(main, navigate, params) {
   function renderQuestion() {
     const q = mod.quiz[index]
     main.innerHTML = `
-      <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
-      <div class="progress-dots" aria-hidden="true" style="margin-top:14px;">
+      <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
+      <div class="progress-dots mt-8" aria-hidden="true">
         ${mod.quiz.map((_, i) => `<span class="${i < index ? 'done' : i === index ? 'current' : ''}"></span>`).join('')}
       </div>
-      <p class="text-xs-dim" style="margin:0 0 6px;">${t('question')} ${index + 1}/${mod.quiz.length}</p>
+      <div class="q-head">
+        <span class="q-count">${icon('clipboard-check', { size: 14 })} ${t('question')} ${index + 1}/${mod.quiz.length}</span>
+        <button class="icon-btn" id="listen-btn" aria-label="${t('listenBtn')}" title="${t('listenBtn')}">${icon('volume-2', { size: 22 })}</button>
+      </div>
       <div class="question" id="question-text">${pick(q.question)}</div>
-      <button class="btn" id="listen-btn" style="margin-bottom:12px;">${t('listenBtn')}</button>
-      <p class="hint" id="voice-note" hidden style="text-align:left;margin:-6px 0 12px;">${t('voiceUnavailableNote')}</p>
+      <p class="hint" id="voice-note" hidden>${t('voiceUnavailableNote')}</p>
       <div id="options" role="radiogroup" aria-labelledby="question-text"></div>
-      <button class="btn btn-primary btn-block" id="action-btn" disabled style="margin-top:8px;">${t('submit')}</button>
-      <p aria-live="polite" class="hint" id="answer-announce" style="position:absolute;left:-9999px;"></p>
+      <button class="btn btn-primary btn-block mt-8" id="action-btn" disabled>${icon('check', { size: 22 })} ${t('submit')}</button>
+      <p aria-live="polite" class="sr-only" id="answer-announce"></p>
     `
 
     main.querySelector('#back').addEventListener('click', () => {
@@ -52,7 +57,7 @@ export function renderQuiz(main, navigate, params) {
       el.className = 'option'
       el.setAttribute('role', 'radio')
       el.setAttribute('aria-checked', 'false')
-      el.innerHTML = `<span class="option-text">${pick(opt)}</span>`
+      el.innerHTML = `<span class="option-key">${KEYS[i] ?? i + 1}</span><span class="option-text">${pick(opt)}</span><span class="option-mark"></span>`
       el.addEventListener('click', () => {
         if (answered) return
         selected = i
@@ -74,16 +79,23 @@ export function renderQuiz(main, navigate, params) {
         // Text (not just color) signal for correct/incorrect — screen
         // readers and colorblind users both need this, not just sighted
         // color-perceiving users (WCAG 1.4.1, color not the only cue).
+        // The icon is the visible cue; the hidden suffix is the same
+        // message for screen readers.
+        const mark = (el, iconName, suffix) => {
+          el.querySelector('.option-mark').innerHTML = `${icon(iconName, { size: 26 })}<span class="sr-only"> ${suffix}</span>`
+        }
         optionEls[q.correctIndex].classList.add('correct')
-        optionEls[q.correctIndex].querySelector('.option-text').textContent += ` ${t('optionCorrectSuffix')}`
+        mark(optionEls[q.correctIndex], 'circle-check', t('optionCorrectSuffix'))
         if (!wasCorrect) {
           optionEls[selected].classList.add('incorrect')
-          optionEls[selected].querySelector('.option-text').textContent += ` ${t('optionIncorrectSuffix')}`
+          mark(optionEls[selected], 'circle-x', t('optionIncorrectSuffix'))
         }
         main.querySelector('#answer-announce').textContent = wasCorrect ? t('answerCorrectAnnounce') : t('answerIncorrectAnnounce')
         navigator.vibrate?.(wasCorrect ? 20 : [30, 50, 30])
         wasCorrect ? playCorrect() : playIncorrect()
-        actionBtn.textContent = index < mod.quiz.length - 1 ? t('next') : t('yourScore')
+        actionBtn.innerHTML = index < mod.quiz.length - 1
+          ? `${t('next')} ${icon('chevron-right', { size: 22 })}`
+          : `${icon('trophy', { size: 22 })} ${t('yourScore')}`
         return
       }
       index += 1

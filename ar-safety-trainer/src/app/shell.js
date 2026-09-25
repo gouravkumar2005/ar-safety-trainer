@@ -1,35 +1,49 @@
-// The persistent app chrome: top bar with brand, 🚨 emergency shortcut,
-// text size, sound, verify, language and (when logged in) profile buttons.
+// The persistent app chrome, laid out like a Government of India service
+// app: a navy accessibility bar (government name, text size, sound,
+// language), then a white header (emblem mark + app name, verify, profile,
+// red emergency button) with a tricolour rule under it. Every control is
+// an icon with an aria-label, so the header needs no words to read.
 // Returns the <main> element that screens render into.
 
 import { t, toggleLang, getLang } from '../core/i18n/index.js'
 import { isMuted, toggleMuted } from '../shared/ui/sound.js'
+import { icon } from '../shared/ui/icon.js'
 import { EMERGENCY_RESPONSE_MODULE_ID } from '../content/modules.js'
 import { isLoggedIn, onSessionChange } from '../core/session.js'
 import { navigate, render } from './router.js'
 
 // Text-size control: cycles base -> lg -> xl -> base, persisted the same
-// way i18n persists language (a flat localStorage key, not the bigger
-// state.js blob — this is a standalone UI preference, not app data). Every
-// font-size in the stylesheets is in rem, so one <html> class scales all.
+// way i18n persists language (a flat localStorage key). Every font-size in
+// the stylesheets is in rem, so one <html> class scales all.
 const TEXT_SIZES = ['', 'text-lg', 'text-xl']
 
 export function mountShell(app) {
   app.innerHTML = `
-    <header class="topbar">
-      <div class="brand">
-        <strong id="brand-name"></strong>
-        <span id="brand-tagline"></span>
+    <div class="gov-bar">
+      <span class="gov-name" id="gov-name"></span>
+      <div class="gov-tools">
+        <button class="icon-btn" id="text-size-btn">${icon('a-large-small', { size: 22 })}</button>
+        <button class="icon-btn" id="sound-btn"></button>
+        <button class="icon-btn lang-btn" id="lang-btn">${icon('languages', { size: 18 })}<span id="lang-label"></span></button>
       </div>
-      <div class="stack" style="flex-direction:row;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-        <button class="btn btn-sos" id="emergency-nav-btn" title="Emergency">🚨</button>
-        <button class="btn" id="text-size-btn" title="Text size">Aa</button>
-        <button class="btn" id="sound-btn" title="Sound"></button>
-        <button class="btn" id="verify-nav-btn"></button>
-        <button class="btn" id="lang-btn"></button>
-        <button class="btn" id="profile-btn" title="Profile">👤</button>
-      </div>
-    </header>
+    </div>
+    <div class="app-header">
+      <header class="topbar">
+        <a class="brand" href="#/" id="brand-home">
+          <span class="brand-mark">${icon('landmark', { size: 24 })}</span>
+          <span class="brand-text">
+            <strong id="brand-name"></strong>
+            <span id="brand-tagline"></span>
+          </span>
+        </a>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="verify-nav-btn">${icon('scan-qr-code', { size: 22 })}</button>
+          <button class="icon-btn" id="profile-btn">${icon('circle-user', { size: 24 })}</button>
+          <button class="icon-btn icon-btn-sos" id="emergency-nav-btn">${icon('siren', { size: 24 })}</button>
+        </div>
+      </header>
+      <div class="tricolour" aria-hidden="true"></div>
+    </div>
     <main id="main"></main>
   `
   const $ = (sel) => app.querySelector(sel)
@@ -41,20 +55,27 @@ export function mountShell(app) {
     if (cls) document.documentElement.classList.add(cls)
   }
 
+  const label = (el, text) => {
+    el.setAttribute('aria-label', text)
+    el.title = text
+  }
+
   const paintSoundBtn = () => {
-    $('#sound-btn').textContent = isMuted() ? '🔇' : '🔊'
-    $('#sound-btn').setAttribute('aria-label', t('soundToggleBtn'))
+    $('#sound-btn').innerHTML = icon(isMuted() ? 'volume-x' : 'volume-2', { size: 22 })
+    label($('#sound-btn'), t('soundToggleBtn'))
   }
 
   const paint = () => {
     document.documentElement.lang = getLang()
+    $('#gov-name').textContent = t('govName')
     $('#brand-name').textContent = t('appName')
     $('#brand-tagline').textContent = t('tagline')
-    $('#lang-btn').textContent = t('langToggle')
-    $('#verify-nav-btn').textContent = t('verify')
-    $('#text-size-btn').setAttribute('aria-label', t('textSizeBtn'))
-    $('#emergency-nav-btn').setAttribute('aria-label', t('emergencyQuickAccessBtn'))
-    $('#profile-btn').setAttribute('aria-label', t('profileNavBtn'))
+    $('#lang-label').textContent = t('langToggle')
+    label($('#lang-btn'), t('langToggle'))
+    label($('#verify-nav-btn'), t('verify'))
+    label($('#text-size-btn'), t('textSizeBtn'))
+    label($('#emergency-nav-btn'), t('emergencyQuickAccessBtn'))
+    label($('#profile-btn'), t('profileNavBtn'))
     $('#profile-btn').hidden = !isLoggedIn()
     paintSoundBtn()
   }

@@ -1,21 +1,57 @@
-/* Simulations feature: draggable item chips. */
+/* Simulations feature: the camera stage and its draggable item chips.
+   The stage shows a live camera / 3D scene, so its overlay stays dark
+   for legibility over video; the page around it is the light theme. */
 
-/* Draggable item chips in the interactive AR sims (ppeEquipSim.js /
-   machineryOpsSim.js) — a small fixed-size tile rather than a normal
-   pill button, since these carry an emoji + short label and get
-   repositioned with inline left/top while dragging. */
+.sim-stage {
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - 190px);
+  min-height: 420px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+}
+.sim-fill { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sim-video { object-fit: cover; display: none; }
+.sim-overlay { pointer-events: none; }
+.sim-overlay .sim-back {
+  position: absolute; top: 10px; left: 10px; pointer-events: auto;
+  background: rgba(255, 255, 255, 0.95); color: var(--navy); border-radius: 8px; padding-right: 12px;
+}
+.sim-overlay .sim-badge { position: absolute; top: 10px; right: 10px; }
+.sim-overlay .sim-recenter { position: absolute; top: 56px; right: 10px; pointer-events: auto; }
+.sim-marker { position: fixed; display: none; pointer-events: none; transform: translate(-50%, -50%); }
+.sim-hint {
+  position: absolute; left: 0; right: 0; bottom: 104px; margin: 0; padding: 0 12px;
+  text-align: center; color: #fff; font-weight: 700; font-size: 0.9375rem; text-shadow: 0 1px 3px #000;
+}
+.sim-caption { position: absolute; left: 8px; right: 8px; bottom: 8px; display: none; pointer-events: auto; }
+.sim-tray {
+  position: absolute; left: 0; right: 0; bottom: 8px; padding: 0 8px;
+  display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; pointer-events: auto;
+}
+
+/* Draggable item chips — a fixed-size tile rather than a normal pill
+   button, repositioned with inline left/top while dragging. */
 .ppe-chip, .ops-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 72px;
-  min-height: 60px;
-  padding: 6px 4px;
+  gap: 3px;
+  width: 64px;
+  min-height: 64px;
+  padding: 6px 3px;
   text-align: center;
-  background: rgba(20,20,24,0.85);
-  color: #fff;
-  border-color: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--navy);
+  border: 2px solid var(--saffron);
+  border-radius: 10px;
+  font-weight: 700;
 }
+.ppe-chip .chip-label, .ops-chip .chip-label {
+  font-size: 0.625rem; line-height: 1.2; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;
+}
+.ppe-chip.is-done, .ops-chip.is-done { border-color: var(--india-green); color: var(--india-green); }
 .ppe-chip:active, .ops-chip:active { transform: scale(0.96); }

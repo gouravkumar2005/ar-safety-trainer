@@ -7,6 +7,11 @@
 
 import { t, hasString } from '../../core/i18n/index.js'
 import { escapeHtml } from '../../shared/ui/html.js'
+import { icon } from '../../shared/ui/icon.js'
+
+// Optional leading icon inside an input or select.
+const withIcon = (iconName, control) =>
+  iconName ? `<div class="input-icon">${icon(iconName, { size: 20 })}${control}</div>` : control
 
 // Language names are shown in their own script, whatever the UI language.
 export const LANGUAGE_OPTIONS = [
@@ -14,13 +19,14 @@ export const LANGUAGE_OPTIONS = [
   { value: 'hi', label: 'हिंदी' },
 ]
 
-export function inputField({ name, label, type = 'text', value = '', hint = '', attrs = '' }) {
+export function inputField({ name, label, type = 'text', value = '', hint = '', attrs = '', iconName = '', placeholder = '' }) {
   const id = `acc-${name}`
   return `
     <div class="field">
       <label for="${id}">${label}</label>
-      <input id="${id}" name="${name}" type="${type}" value="${escapeHtml(value)}"
-        aria-describedby="${id}-error${hint ? ` ${id}-hint` : ''}" ${attrs} />
+      ${withIcon(iconName, `<input id="${id}" name="${name}" type="${type}" value="${escapeHtml(value)}"
+        ${placeholder ? `placeholder="${escapeHtml(placeholder)}"` : ''}
+        aria-describedby="${id}-error${hint ? ` ${id}-hint` : ''}" ${attrs} />`)}
       ${hint ? `<p class="field-hint" id="${id}-hint">${hint}</p>` : ''}
       <p class="field-error" id="${id}-error" role="alert"></p>
     </div>
@@ -28,17 +34,17 @@ export function inputField({ name, label, type = 'text', value = '', hint = '', 
 }
 
 // options: [{ value, label }]
-export function selectField({ name, label, options, value = '', placeholder = '' }) {
+export function selectField({ name, label, options, value = '', placeholder = '', iconName = '' }) {
   const id = `acc-${name}`
   return `
     <div class="field">
       <label for="${id}">${label}</label>
-      <select id="${id}" name="${name}" aria-describedby="${id}-error">
+      ${withIcon(iconName, `<select id="${id}" name="${name}" aria-describedby="${id}-error">
         ${placeholder ? `<option value="" disabled ${value ? '' : 'selected'}>${placeholder}</option>` : ''}
         ${options.map((o) => `
           <option value="${escapeHtml(o.value)}" ${o.value === value ? 'selected' : ''}>${escapeHtml(o.label)}</option>
         `).join('')}
-      </select>
+      </select>`)}
       <p class="field-error" id="${id}-error" role="alert"></p>
     </div>
   `
@@ -101,14 +107,15 @@ export function apiErrorText(err) {
 }
 
 // Disables the submit button and shows a busy label while `task` runs.
+// (innerHTML, not textContent, so the button's icon comes back after.)
 export async function whileBusy(button, busyLabel, task) {
-  const label = button.textContent
+  const label = button.innerHTML
   button.disabled = true
-  button.textContent = busyLabel
+  button.innerHTML = `${icon('hourglass', { size: 20 })} ${escapeHtml(busyLabel)}`
   try {
     return await task()
   } finally {
     button.disabled = false
-    button.textContent = label
+    button.innerHTML = label
   }
 }

@@ -1,6 +1,7 @@
 import { getModule } from '../../content/modules.js'
 import { t, pick, getLang } from '../../core/i18n/index.js'
 import { speak, stopSpeaking } from '../../platform/speech.js'
+import { icon, MODULE_ICONS } from '../../shared/ui/icon.js'
 
 // <model-viewer> handles the actual AR session (WebXR on Chrome, Scene
 // Viewer intent on Android, Quick Look on iOS with a usdz) — we just place
@@ -24,11 +25,16 @@ export function renderArViewer(main, navigate, params) {
   const s = mod.scale ?? 1
 
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
-    <h2 class="h2-title" style="margin:12px 0 4px;">${pick(mod.title)}</h2>
-    <div class="offline-pill">${t('offlineReady')}</div>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('backToModules')}</button>
+    <div class="page-head">
+      <span class="head-icon">${icon(MODULE_ICONS[mod.domain] || 'box', { size: 30 })}</span>
+      <div>
+        <h2>${pick(mod.title)}</h2>
+        <span class="offline-pill mt-8">${icon('wifi-off', { size: 14 })} ${t('offlineShort')}</span>
+      </div>
+    </div>
 
-    <div class="viewer-wrap" style="margin-top:14px;">
+    <div class="viewer-wrap">
       <model-viewer
         id="mv"
         src="${mod.model}"
@@ -44,18 +50,27 @@ export function renderArViewer(main, navigate, params) {
         ar
         ar-modes="webxr scene-viewer quick-look"
       >
-        <button slot="ar-button" class="btn btn-accent" style="position:absolute;bottom:12px;right:12px;">
-          ${t('viewInAR')}
-        </button>
+        <button slot="ar-button" class="btn btn-accent ar-btn">${icon('scan', { size: 20 })} ${t('viewInAR')}</button>
       </model-viewer>
     </div>
-    <p class="hint">${t('rotateHint')}</p>
-
-    <div class="stack" style="margin-top:18px;">
-      <button class="btn btn-accent" id="tour-btn">${t('tourBtn')}</button>
-      ${mod.hasItemGallery ? `<button class="btn" id="gallery-btn">${t('ppeGalleryBtn')}</button>` : ''}
-      <button class="btn btn-primary btn-block" id="quiz-btn">${t('takeQuiz')}</button>
+    <div class="hint-icons">
+      <span>${icon('rotate-3d', { size: 16 })} ${t('hintRotate')}</span>
+      <span>${icon('move-3d', { size: 16 })} ${t('hintZoom')}</span>
+      ${mod.hotspots?.length ? `<span>${icon('hand', { size: 16 })} ${t('hintTapDots')}</span>` : ''}
     </div>
+
+    <div class="tile-grid mt-16">
+      <button class="tile is-saffron" id="tour-btn">
+        <span class="tile-icon">${icon('gamepad-2', { size: 28 })}</span>
+        <span class="tile-label">${t('tourBtn')}</span>
+      </button>
+      ${mod.hasItemGallery ? `
+      <button class="tile" id="gallery-btn">
+        <span class="tile-icon">${icon('images', { size: 28 })}</span>
+        <span class="tile-label">${t('ppeGalleryBtn')}</span>
+      </button>` : ''}
+    </div>
+    <button class="btn btn-primary btn-block mt-16" id="quiz-btn">${icon('clipboard-check', { size: 22 })} ${t('takeQuiz')}</button>
 
     <div id="sheet-root"></div>
   `
@@ -117,11 +132,11 @@ function showHotspotSheet(root, hotspot, mv) {
   stopSpeaking()
   root.innerHTML = `
     <div class="sheet" id="sheet">
-      <h4>${pick(hotspot.label)}</h4>
+      <h4>${icon('info', { size: 20 })} ${pick(hotspot.label)}</h4>
       <p>${pick(hotspot.info)}</p>
-      <div style="display:flex;gap:10px;">
-        <button class="btn" id="sheet-listen" style="flex:1;">${t('listenBtn')}</button>
-        <button class="btn" id="sheet-close" style="flex:1;">OK</button>
+      <div class="btn-row">
+        <button class="btn" id="sheet-listen">${icon('volume-2', { size: 20 })} ${t('listenBtn')}</button>
+        <button class="btn btn-primary" id="sheet-close">${icon('check', { size: 20 })} OK</button>
       </div>
       <p class="hint" id="sheet-voice-note" hidden>${t('voiceUnavailableNote')}</p>
     </div>

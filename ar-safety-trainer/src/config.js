@@ -27,3 +27,14 @@ export const API_BASE_URL = configuredApiUrl.replace(/\/$/, '')
 // Temporarily switched off so every module is freely reachable for a live
 // presentation. Flip back to true once the presentation is done.
 export const PPE_GATE_ENABLED = false
+
+// One-tap demo logins on the login screen (fills work ID + password).
+// Only on the local dev server: these accounts exist in the local accounts
+// database (server/data/pglite), not in the hosted one. To show them in a
+// build too, create the same accounts in that database and set this to true.
+export const DEMO_LOGINS_ENABLED = import.meta.env.DEV
+export const DEMO_LOGINS = [
+  { role: 'worker', workId: 'JH-WORKER-001', password: 'Worker@123' },
+  { role: 'supervisor', workId: 'JH-SUPER-001', password: 'Super@123' },
+  { role: 'admin', workId: 'JH-ADMIN-001', password: 'Admin@123' },
+]

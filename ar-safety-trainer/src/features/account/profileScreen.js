@@ -11,67 +11,75 @@ import { getRegistrationOptions, updateProfile, changePassword, logout, refreshP
 import {
   inputField, selectField, readForm, showFieldErrors, apiErrorText, whileBusy, LANGUAGE_OPTIONS,
 } from './formFields.js'
+import { icon } from '../../shared/ui/icon.js'
 
 export function renderProfile(main, navigate) {
   const user = getCurrentUser()
   const isOffline = !navigator.onLine
 
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('backToModules')}</button>
 
-    <div class="account-card" style="margin-top:12px;">
+    <div class="account-card mt-8">
       <div class="profile-head">
         <div class="profile-avatar" aria-hidden="true">${escapeHtml(initials(user.fullName))}</div>
         <div>
-          <h2 class="h2-title" style="margin:0;">${escapeHtml(user.fullName)}</h2>
-          <p class="subtitle-dim" style="margin:2px 0 0;">${t(`role_${user.role}`)}</p>
+          <h2>${escapeHtml(user.fullName)}</h2>
+          <span class="badge badge-info mt-8">${icon('id-card', { size: 14 })} ${t(`role_${user.role}`)}</span>
         </div>
       </div>
-      <div class="kv-row"><span class="k">${t('workIdLabel')}</span><span class="v">${escapeHtml(user.workId)}</span></div>
-      <p class="field-hint">${t('workIdLockedNote')}</p>
+      <div class="kv-row">
+        <span class="k">${icon('id-card', { size: 18 })} ${t('workIdLabel')}</span>
+        <span class="v">${escapeHtml(user.workId)} ${icon('lock', { size: 16, cls: 'status-dim', label: t('workIdLockedNote') })}</span>
+      </div>
     </div>
 
-    ${isOffline ? `<p class="note">${t('profileOfflineNote')}</p>` : ''}
+    ${isOffline ? `<p class="note">${icon('wifi-off', { size: 16 })} ${t('profileOfflineNote')}</p>` : ''}
 
     ${hasRole('supervisor', 'admin') ? `
-      <div class="account-card">
-        <h3 class="account-section" style="margin-top:0;">${t('adminToolsTitle')}</h3>
-        <div class="stack">
-          <button class="btn" id="to-dashboard">${t('complianceDashboardBtn')}</button>
-          ${hasRole('admin') ? `<button class="btn" id="to-users">${t('manageUsersBtn')}</button>` : ''}
-        </div>
+      <h3 class="section-title">${t('adminToolsTitle')}</h3>
+      <div class="tile-grid">
+        <button class="tile" id="to-dashboard">
+          <span class="tile-icon">${icon('chart-column', { size: 28 })}</span>
+          <span class="tile-label">${t('complianceDashboardBtn')}</span>
+        </button>
+        ${hasRole('admin') ? `
+        <button class="tile is-saffron" id="to-users">
+          <span class="tile-icon">${icon('user-cog', { size: 28 })}</span>
+          <span class="tile-label">${t('manageUsersBtn')}</span>
+        </button>` : ''}
       </div>
     ` : ''}
 
-    <div class="account-card">
-      <h3 class="account-section" style="margin-top:0;">${t('editProfileTitle')}</h3>
-      <form id="profile-form" novalidate>
+    <details class="account-card mt-16" id="edit-card">
+      <summary class="account-section" style="margin:0;cursor:pointer;">${icon('pencil', { size: 20 })} ${t('editProfileTitle')}</summary>
+      <form id="profile-form" novalidate class="mt-16">
         <p class="form-alert" id="profile-alert" role="alert"></p>
-        ${inputField({ name: 'fullName', label: t('fullNameLabel'), value: user.fullName })}
-        ${inputField({ name: 'phone', label: t('phoneLabel'), type: 'tel', value: user.phone, attrs: 'inputmode="numeric"' })}
-        ${inputField({ name: 'organisation', label: t('organisationLabel'), value: user.organisation })}
+        ${inputField({ name: 'fullName', label: t('fullNameLabel'), iconName: 'user-round', value: user.fullName })}
+        ${inputField({ name: 'phone', label: t('phoneLabel'), type: 'tel', iconName: 'phone', value: user.phone, attrs: 'inputmode="numeric"' })}
+        ${inputField({ name: 'organisation', label: t('organisationLabel'), iconName: 'factory', value: user.organisation })}
         <div id="district-slot">
-          ${selectField({ name: 'district', label: t('districtLabel'), options: [{ value: user.district, label: user.district }], value: user.district })}
+          ${selectField({ name: 'district', label: t('districtLabel'), iconName: 'map-pin', options: [{ value: user.district, label: user.district }], value: user.district })}
         </div>
-        ${inputField({ name: 'designation', label: t('designationLabel'), value: user.designation })}
-        ${inputField({ name: 'uan', label: t('workerUan'), value: user.uan, hint: t('uanFieldHint'), attrs: 'inputmode="numeric"' })}
-        ${selectField({ name: 'preferredLang', label: t('preferredLangLabel'), options: LANGUAGE_OPTIONS, value: user.preferredLang })}
-        <button class="btn btn-primary btn-block" type="submit" id="save-btn" ${isOffline ? 'disabled' : ''}>${t('saveChangesBtn')}</button>
+        ${inputField({ name: 'designation', label: t('designationLabel'), iconName: 'hard-hat', value: user.designation })}
+        ${inputField({ name: 'uan', label: t('workerUan'), iconName: 'badge-check', value: user.uan, attrs: 'inputmode="numeric"' })}
+        ${selectField({ name: 'preferredLang', label: t('preferredLangLabel'), iconName: 'languages', options: LANGUAGE_OPTIONS, value: user.preferredLang })}
+        <button class="btn btn-primary btn-block" type="submit" id="save-btn" ${isOffline ? 'disabled' : ''}>${icon('save', { size: 22 })} ${t('saveChangesBtn')}</button>
       </form>
-    </div>
+    </details>
 
-    <div class="account-card">
-      <h3 class="account-section" style="margin-top:0;">${t('changePasswordTitle')}</h3>
-      <form id="password-form" novalidate>
+    <details class="account-card">
+      <summary class="account-section" style="margin:0;cursor:pointer;">${icon('key-round', { size: 20 })} ${t('changePasswordTitle')}</summary>
+      <form id="password-form" novalidate class="mt-16">
         <p class="form-alert" id="password-alert" role="alert"></p>
-        ${inputField({ name: 'currentPassword', label: t('currentPasswordLabel'), type: 'password', attrs: 'autocomplete="current-password"' })}
-        ${inputField({ name: 'newPassword', label: t('newPasswordLabel'), type: 'password', hint: t('passwordHint'), attrs: 'autocomplete="new-password"' })}
-        ${inputField({ name: 'confirmPassword', label: t('confirmPasswordLabel'), type: 'password', attrs: 'autocomplete="new-password"' })}
-        <button class="btn btn-block" type="submit" id="password-btn" ${isOffline ? 'disabled' : ''}>${t('changePasswordBtn')}</button>
+        ${inputField({ name: 'currentPassword', label: t('currentPasswordLabel'), type: 'password', iconName: 'key-round', attrs: 'autocomplete="current-password"' })}
+        ${inputField({ name: 'newPassword', label: t('newPasswordLabel'), type: 'password', iconName: 'key-round', hint: t('passwordHint'), attrs: 'autocomplete="new-password"' })}
+        ${inputField({ name: 'confirmPassword', label: t('confirmPasswordLabel'), type: 'password', iconName: 'key-round', attrs: 'autocomplete="new-password"' })}
+        <button class="btn btn-block" type="submit" id="password-btn" ${isOffline ? 'disabled' : ''}>${icon('key-round', { size: 22 })} ${t('changePasswordBtn')}</button>
       </form>
-    </div>
+    </details>
 
-    <button class="btn btn-block account-logout" id="logout-btn">${t('logoutBtn')}</button>
+    <button class="btn btn-block account-logout" id="logout-btn">${icon('log-out', { size: 22 })} ${t('logoutBtn')}</button>
   `
 
   main.querySelector('#back').addEventListener('click', () => navigate('#/'))
@@ -103,6 +111,7 @@ async function fillDistrictOptions(main, current) {
     main.querySelector('#district-slot').innerHTML = selectField({
       name: 'district',
       label: t('districtLabel'),
+      iconName: 'map-pin',
       options: districts.map((d) => ({ value: d, label: d })),
       value: current,
     })

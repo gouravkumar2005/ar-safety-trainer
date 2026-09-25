@@ -58,7 +58,7 @@ function accessRedirect(route) {
 }
 
 // Emergency Response is exempt from the gate on purpose, gate-enabled or
-// not — the topbar's 🚨 button promises one-tap access from anywhere, and
+// not — the header's red siren button promises one-tap access from anywhere, and
 // blocking real first-aid help behind an unrelated induction quiz would be
 // actively dangerous during an actual accident.
 function isBlockedByPpeGate(params) {

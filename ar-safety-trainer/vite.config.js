@@ -30,8 +30,8 @@ function pwaPlugin() {
       name: 'AR Safety Trainer — Jharkhand Mines & Manufacturing',
       short_name: 'AR Safety Trainer',
       description: 'AR-based vocational training & certification for industrial safety',
-      theme_color: '#0b5fff',
-      background_color: '#0b0f17',
+      theme_color: '#0b3d91',
+      background_color: '#ffffff',
       display: 'standalone',
       start_url: '/',
       icons: [
@@ -42,7 +42,7 @@ function pwaPlugin() {
       // Cache the app shell + 3D models + on-device ML models so training
       // works with no signal underground / on a mine site, per the PS's
       // offline requirement.
-      globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+      globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
       globIgnores: ['mediapipe/**'], // cached on first use instead (below)
       maximumFileSizeToCacheInBytes: 20 * 1024 * 1024, // glb models can be large
       runtimeCaching: [

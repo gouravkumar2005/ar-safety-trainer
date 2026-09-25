@@ -6,6 +6,7 @@ import { escapeHtml } from '../../shared/ui/html.js'
 import { buildCertificatePayload, certificateToQrDataUrl } from './certificate.js'
 import { playCertChime } from '../../shared/ui/sound.js'
 import { copyText } from '../../platform/clipboard.js'
+import { icon } from '../../shared/ui/icon.js'
 
 export function renderCertificate(main, navigate, params) {
   const mod = getModule(params.id)
@@ -22,28 +23,30 @@ export function renderCertificate(main, navigate, params) {
     // accounts switched off (config.js), the worker types it in as before.
     const locked = isLoggedIn() ? 'readonly' : ''
     main.innerHTML = `
-      <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
-      <h2 class="h2-title" style="margin:12px 0 16px;">${t('getCertificate')}</h2>
+      <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
+      <div class="page-head">
+        <span class="head-icon is-green">${icon('award', { size: 30 })}</span>
+        <div><h2>${t('getCertificate')}</h2><p>${pick(mod.shortTitle || mod.title)}</p></div>
+      </div>
 
       <!-- When logged in, name and work ID come from the account (edited on
            the profile screen), so a certificate can't be issued under
            someone else's identity from this form. -->
       <div class="field">
         <label for="worker-name">${t('workerName')}</label>
-        <input id="worker-name" type="text" value="${escapeHtml(state.worker.name)}" placeholder="e.g. Sunita Murmu" ${locked} />
+        <div class="input-icon">${icon('user-round', { size: 20 })}<input id="worker-name" type="text" value="${escapeHtml(state.worker.name)}" placeholder="Sunita Murmu" ${locked} /></div>
       </div>
       <div class="field">
         <label for="worker-id">${t('workerId')}</label>
-        <input id="worker-id" type="text" value="${escapeHtml(state.worker.id)}" placeholder="e.g. JH-MINE-00214" ${locked} />
+        <div class="input-icon">${icon('id-card', { size: 20 })}<input id="worker-id" type="text" value="${escapeHtml(state.worker.id)}" placeholder="JH-MINE-00214" ${locked} /></div>
       </div>
       <div class="field">
         <label for="worker-uan">${t('workerUan')}</label>
-        <input id="worker-uan" type="text" value="${escapeHtml(state.worker.uan)}" placeholder="e.g. 12-3456-7890-1234" ${locked} />
-        <p class="hint" style="text-align:left;margin-top:4px;">${t('uanFieldHint')}</p>
+        <div class="input-icon">${icon('badge-check', { size: 20 })}<input id="worker-uan" type="text" value="${escapeHtml(state.worker.uan)}" placeholder="12-3456-7890-1234" ${locked} /></div>
       </div>
-      ${locked ? `<p class="field-hint" style="margin:-4px 0 14px;">${t('certFromProfileNote')}</p>` : ''}
+      ${locked ? `<p class="field-hint">${icon('lock', { size: 14 })} ${t('certFromProfileNote')}</p>` : ''}
 
-      <button class="btn btn-accent btn-block" id="gen-btn">${t('generateCert')}</button>
+      <button class="btn btn-good btn-block mt-16" id="gen-btn">${icon('award', { size: 24 })} ${t('generateCert')}</button>
     `
     main.querySelector('#back').addEventListener('click', () => navigate(`#/module/${mod.id}/result`))
     main.querySelector('#gen-btn').addEventListener('click', async () => {
@@ -73,53 +76,51 @@ export function renderCertificate(main, navigate, params) {
     playCertChime()
 
     main.innerHTML = `
-      <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
-      <div class="cert-card" style="margin-top:14px;">
-        <div class="cert-label">${t('certTitle')}</div>
+      <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('back')}</button>
+      <div class="cert-card mt-8">
+        <div class="cert-seal">${icon('award', { size: 32 })}</div>
+        <div class="cert-gov">${t('govName')}</div>
+        <h3>${t('certTitle')}</h3>
+
+        <div class="cert-label">${t('workerName')}</div>
         <div class="cert-value cert-value-lg">${escapeHtml(name)}</div>
 
         <img src="${qrUrl}" width="180" height="180" alt="${t('certScanNote')}" />
+        <p class="hint" style="margin-top:0;">${icon('scan-qr-code', { size: 16 })} ${t('certScanNote')}</p>
 
-        <div class="cert-label">${t('certModule')}</div>
-        <div class="cert-value">${pick(mod.title)}</div>
-
-        <div class="cert-label">${t('certScore')}</div>
-        <div class="cert-value">${result.score}/${result.total}</div>
-
-        ${fields.uan ? `
-          <div class="cert-label">${t('certUanLabel')}</div>
-          <div class="cert-value">${escapeHtml(fields.uan)}</div>
-          <p class="hint">${t('certUanNote')}</p>
-        ` : ''}
-
-        ${fields.nsqf ? `
-          <div class="cert-label">${t('certNsqfLabel')}</div>
-          <div class="cert-value">${fields.nsqf.level} — ${pick(fields.nsqf.competency)}</div>
-        ` : ''}
-
-        <div class="cert-label">${t('certIssued')}</div>
-        <div class="cert-value">${new Date(cert.timestamp).toLocaleString()}</div>
-
-        <div class="cert-label">${t('certLedgerEntry')}</div>
-        <div class="cert-value">#${cert.seq}</div>
-
-        <p class="hint">${t('certScanNote')}</p>
+        <div class="cert-grid mt-12">
+          <div><div class="cert-label">${t('certModule')}</div><div class="cert-value">${pick(mod.shortTitle || mod.title)}</div></div>
+          <div><div class="cert-label">${t('certScore')}</div><div class="cert-value">${result.score}/${result.total}</div></div>
+          <div><div class="cert-label">${t('certIssued')}</div><div class="cert-value">${new Date(cert.timestamp).toLocaleDateString()}</div></div>
+          <div><div class="cert-label">${t('certLedgerEntry')}</div><div class="cert-value">#${cert.seq}</div></div>
+          ${fields.uan ? `<div><div class="cert-label">${t('certUanLabel')}</div><div class="cert-value">${escapeHtml(fields.uan)}</div></div>` : ''}
+          ${fields.nsqf ? `<div><div class="cert-label">${t('certNsqfLabel')}</div><div class="cert-value">${fields.nsqf.level}</div></div>` : ''}
+        </div>
+        <span class="badge badge-active mt-8">${icon('shield-check', { size: 14 })} ${t('certSigned')}</span>
       </div>
 
-      ${fields.nsqf ? `<div class="note">${t('nsqfDisclaimerNote')}</div>` : ''}
-      <div class="note">${t('demoSignatureNote')}</div>
+      <div class="btn-row mt-16">
+        <button class="btn" id="copy-btn">${icon('copy', { size: 20 })} ${t('certCopyJson')}</button>
+        <button class="btn" id="verify-btn">${icon('scan-qr-code', { size: 20 })} ${t('verify')}</button>
+      </div>
+      <button class="btn btn-primary btn-block mt-12" id="done-btn">${icon('house', { size: 22 })} ${t('backToModules')}</button>
 
-      <div class="module-card" style="margin-top:12px;">
-        <span class="badge badge-locked">${t('digilockerStatusBadge')}</span>
-        <button class="btn" disabled style="width:fit-content;">${t('digilockerBtn')}</button>
+      <div class="module-card mt-16">
+        <div class="row-between">
+          <span class="row" style="font-weight:700;">${icon('lock', { size: 18 })} ${t('digilockerBtn')}</span>
+          <span class="badge badge-locked">${icon('hourglass', { size: 14 })} ${t('digilockerStatusBadge')}</span>
+        </div>
+      </div>
+
+      <!-- Honesty disclaimers stay available, one tap away, instead of
+           filling the certificate screen with paragraphs. -->
+      <details class="note">
+        <summary>${icon('info', { size: 16 })} ${t('moreInfo')}</summary>
+        ${fields.uan ? `<p>${t('certUanNote')}</p>` : ''}
+        ${fields.nsqf ? `<p>${t('nsqfDisclaimerNote')}</p>` : ''}
+        <p>${t('demoSignatureNote')}</p>
         <p>${t('digilockerNote')}</p>
-      </div>
-
-      <div class="stack" style="margin-top:16px;">
-        <button class="btn" id="copy-btn">${t('certCopyJson')}</button>
-        <button class="btn" id="verify-btn">${t('certGoVerify')}</button>
-        <button class="btn btn-block" id="done-btn">${t('backToModules')}</button>
-      </div>
+      </details>
     `
     main.querySelector('#back').addEventListener('click', () => navigate(`#/module/${mod.id}/result`))
     main.querySelector('#done-btn').addEventListener('click', () => navigate('#/'))
@@ -128,7 +129,7 @@ export function renderCertificate(main, navigate, params) {
       const btn = main.querySelector('#copy-btn')
       try {
         await copyText(certJson)
-        btn.textContent = t('certCopied')
+        btn.innerHTML = `${icon('check', { size: 20 })} ${t('certCopied')}`
       } catch {
         // Copy failed (e.g. clipboard permission); fall back to a selectable textarea.
         const ta = document.createElement('textarea')
@@ -138,7 +139,7 @@ export function renderCertificate(main, navigate, params) {
         btn.after(ta)
         ta.select()
       }
-      setTimeout(() => { btn.textContent = t('certCopyJson') }, 1500)
+      setTimeout(() => { btn.innerHTML = `${icon('copy', { size: 20 })} ${t('certCopyJson')}` }, 1500)
     })
   }
 }

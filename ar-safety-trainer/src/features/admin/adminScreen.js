@@ -5,6 +5,15 @@ import * as ledger from '../../core/ledger.js'
 import * as aggregate from './aggregate.js'
 import { buildAuditReportText } from './auditReport.js'
 import { saveTextFile } from '../../platform/files.js'
+import { icon, MODULE_ICONS } from '../../shared/ui/icon.js'
+import { escapeHtml } from '../../shared/ui/html.js'
+
+// Module label + icon for result rows.
+function moduleCell(moduleId) {
+  const mod = getModule(moduleId)
+  const label = mod ? pick(mod.shortTitle || mod.title) : escapeHtml(moduleId)
+  return `${icon(MODULE_ICONS[mod?.domain] || 'box', { size: 18 })} ${label}`
+}
 
 // Compliance dashboard MVP — export/import, not live multi-device sync.
 // There's no backend in this build (the team chose "fully offline" this
@@ -25,31 +34,32 @@ async function parseExportBundle(file) {
 
 export function renderAdmin(main, navigate) {
   main.innerHTML = `
-    <button class="btn btn-ghost" id="back">&larr; ${t('backToModules')}</button>
-    <h2 class="h2-title" style="margin:12px 0 2px;">${t('adminHeading')}</h2>
-    <p class="subtitle-dim" style="margin:0 0 16px;">${t('adminSubheading')}</p>
-
-    <div class="module-card">
-      <h3 class="card-h3">${t('adminExportBtn')}</h3>
-      <p>${t('adminExportHint')}</p>
-      <button class="btn btn-accent" id="export-btn" style="margin-top:6px;width:fit-content;">${t('adminExportBtn')}</button>
+    <button class="back-btn" id="back">${icon('arrow-left', { size: 22 })} ${t('backToModules')}</button>
+    <div class="page-head">
+      <span class="head-icon">${icon('chart-column', { size: 30 })}</span>
+      <div><h2>${t('adminHeading')}</h2><p>${icon('wifi-off', { size: 14 })} ${t('adminSubheadingShort')}</p></div>
     </div>
 
-    <div class="module-card">
-      <h3 id="import-label" class="card-h3">${t('adminImportLabel')}</h3>
-      <input type="file" id="import-input" accept="application/json" aria-labelledby="import-label" />
+    <!-- File inputs are wrapped in picture tiles; the input itself stays
+         keyboard-focusable (sr-only), the tile shows the focus ring. -->
+    <div class="tile-grid">
+      <button class="tile is-saffron" id="export-btn">
+        <span class="tile-icon">${icon('download', { size: 28 })}</span>
+        <span class="tile-label">${t('adminExportBtn')}</span>
+      </button>
+      <label class="tile">
+        <input type="file" id="import-input" accept="application/json" class="sr-only" />
+        <span class="tile-icon">${icon('upload', { size: 28 })}</span>
+        <span class="tile-label">${t('adminImportLabel')}</span>
+      </label>
+      <label class="tile is-green is-wide">
+        <input type="file" id="aggregate-input" accept="application/json" multiple class="sr-only" />
+        <span class="tile-icon">${icon('users', { size: 26 })}</span>
+        <span class="tile-label">${t('adminAggregateImportLabel')}</span>
+      </label>
     </div>
 
-    <div id="review-root"><p class="hint">${t('adminNoData')}</p></div>
-
-    <hr style="border-color:var(--border);margin:22px 0;" />
-
-    <div class="module-card">
-      <h3 id="aggregate-import-label" class="card-h3">${t('adminAggregateHeading')}</h3>
-      <p>${t('adminAggregateImportLabel')}</p>
-      <input type="file" id="aggregate-input" accept="application/json" multiple aria-labelledby="aggregate-import-label" />
-    </div>
-
+    <div id="review-root"></div>
     <div id="aggregate-root"></div>
   `
 
@@ -66,7 +76,7 @@ export function renderAdmin(main, navigate) {
 
   async function doExport() {
     const btn = main.querySelector('#export-btn')
-    const original = btn.textContent
+    const original = btn.innerHTML
     btn.disabled = true
     try {
       const ledgerExport = await ledger.exportAll()
@@ -79,7 +89,7 @@ export function renderAdmin(main, navigate) {
       await saveTextFile(JSON.stringify(bundle, null, 2), `ar-safety-trainer-export-${idPart}.json`, 'application/json')
     } finally {
       btn.disabled = false
-      btn.textContent = original
+      btn.innerHTML = original
     }
   }
 
@@ -90,7 +100,7 @@ export function renderAdmin(main, navigate) {
     try {
       data = await parseExportBundle(file)
     } catch {
-      reviewRoot.innerHTML = `<div class="result-box result-tampered"><p>${t('adminImportError')}</p></div>`
+      reviewRoot.innerHTML = `<div class="result-box result-tampered">${icon('circle-alert', { size: 22 })}<p>${t('adminImportError')}</p></div>`
       return
     }
     renderReview(reviewRoot, data)
@@ -102,61 +112,64 @@ export function renderAdmin(main, navigate) {
     const certs = data.entries.filter((e) => e.type === 'CERT_ISSUED')
     const grievances = data.entries.filter((e) => e.type === 'GRIEVANCE_SUBMITTED')
 
-    const resultRows = Object.entries(results)
+    const resultList = Object.entries(results)
+    const passed = resultList.filter(([, r]) => r.passed).length
+
+    const resultRows = resultList
       .map(([moduleId, r]) => {
-        const mod = getModule(moduleId)
-        const label = mod ? pick(mod.title) : moduleId
-        const badge = r.passed
-          ? `<span class="badge badge-active">${t('pass')}</span>`
-          : `<span class="badge badge-bad">${t('fail')}</span>`
-        return `<div class="kv-row"><span class="k">${label}</span><span class="v">${r.score}/${r.total} ${badge}</span></div>`
+        const status = r.passed
+          ? icon('circle-check', { size: 20, cls: 'status-good', label: t('pass') })
+          : icon('circle-x', { size: 20, cls: 'status-bad', label: t('fail') })
+        return `<div class="kv-row"><span class="k">${moduleCell(moduleId)}</span><span class="v">${Number(r.score)}/${Number(r.total)} ${status}</span></div>`
       })
       .join('') || `<p class="hint">—</p>`
 
     const certRows = certs
-      .map((c) => {
-        const mod = getModule(c.payload?.moduleId)
-        const label = mod ? pick(mod.title) : c.payload?.moduleId
-        return `<div class="kv-row"><span class="k">#${c.seq} · ${label}</span><span class="v">${c.payload?.score}/${c.payload?.total}</span></div>`
-      })
+      .map((c) => `<div class="kv-row"><span class="k">${moduleCell(c.payload?.moduleId)}</span><span class="v">${icon('award', { size: 16, cls: 'status-good' })} #${Number(c.seq)}</span></div>`)
       .join('') || `<p class="hint">—</p>`
 
     const grievanceRows = grievances
-      .map((g) => {
-        const mod = g.payload?.moduleId ? getModule(g.payload.moduleId) : null
-        const modLabel = mod ? ` · ${pick(mod.title)}` : ''
-        return `<div class="kv-row"><span class="k">GRV-${g.seq}${modLabel}</span><span class="v">${g.payload?.category}</span></div>`
-      })
+      .map((g) => `<div class="kv-row"><span class="k">${icon('message-square-warning', { size: 18 })} GRV-${Number(g.seq)}</span><span class="v">${escapeHtml(g.payload?.category)}</span></div>`)
       .join('') || `<p class="hint">${t('adminNoGrievances')}</p>`
 
+    // Worker fields come from an imported file, so they are escaped.
     root.innerHTML = `
+      <h3 class="section-title">${t('adminWorker')}</h3>
       <div class="module-card">
-        <h3 class="card-h3">${t('adminWorker')}</h3>
-        <div class="kv-row"><span class="k">${t('workerName')}</span><span class="v">${worker.name || '—'}</span></div>
-        <div class="kv-row"><span class="k">${t('workerId')}</span><span class="v">${worker.id || '—'}</span></div>
-        ${worker.uan ? `<div class="kv-row"><span class="k">${t('certUanLabel')}</span><span class="v">${worker.uan}</span></div>` : ''}
+        <div class="profile-head" style="margin:0;">
+          <span class="head-icon">${icon('user-round', { size: 28 })}</span>
+          <div>
+            <h3>${escapeHtml(worker.name || '—')}</h3>
+            <p>${icon('id-card', { size: 14 })} ${escapeHtml(worker.id || '—')}${worker.uan ? ` · UAN ${escapeHtml(worker.uan)}` : ''}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat is-good">${icon('circle-check', { size: 26 })}<div><strong>${passed}</strong><span>${t('statPassed')}</span></div></div>
+        <div class="stat is-bad">${icon('circle-x', { size: 26 })}<div><strong>${resultList.length - passed}</strong><span>${t('statFailed')}</span></div></div>
+        <div class="stat">${icon('award', { size: 26 })}<div><strong>${certs.length}</strong><span>${t('adminCertificates')}</span></div></div>
+        <div class="stat is-saffron">${icon('message-square-warning', { size: 26 })}<div><strong>${grievances.length}</strong><span>${t('adminGrievancesHeading')}</span></div></div>
       </div>
 
       <div class="module-card">
-        <h3 class="card-h3">${t('adminModuleResults')}</h3>
+        <h3>${icon('clipboard-check', { size: 20 })} ${t('adminModuleResults')}</h3>
         ${resultRows}
       </div>
-
       <div class="module-card">
-        <h3 class="card-h3">${t('adminCertificates')}</h3>
+        <h3>${icon('award', { size: 20 })} ${t('adminCertificates')}</h3>
         ${certRows}
       </div>
-
       <div class="module-card">
-        <h3 class="card-h3">${t('adminGrievancesHeading')}</h3>
+        <h3>${icon('message-square-warning', { size: 20 })} ${t('adminGrievancesHeading')}</h3>
         ${grievanceRows}
       </div>
 
-      <div class="stack" style="flex-direction:row;">
-        <button class="btn btn-primary" style="flex:1;" id="verify-ledger-btn">${t('adminVerifyBtn')}</button>
-        <button class="btn" style="flex:1;" id="audit-report-btn">${t('adminAuditReportBtn')}</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="verify-ledger-btn">${icon('shield-check', { size: 20 })} ${t('adminVerifyBtn')}</button>
+        <button class="btn" id="audit-report-btn">${icon('file-text', { size: 20 })} ${t('adminAuditReportBtn')}</button>
       </div>
-      <div id="integrity-root"></div>
+      <div id="integrity-root" aria-live="polite"></div>
     `
 
     let lastVerifyResult = null
@@ -166,8 +179,8 @@ export function renderAdmin(main, navigate) {
       integrityRoot.innerHTML = `<p class="hint">…</p>`
       lastVerifyResult = await ledger.verifyChain(data.entries, data.publicKeyJwk)
       integrityRoot.innerHTML = lastVerifyResult.valid
-        ? `<div class="result-box result-valid"><h4>✅</h4><p>${t('adminIntegrityValid', { n: lastVerifyResult.totalEntries })}</p></div>`
-        : `<div class="result-box result-tampered"><h4>❌</h4><p>${t('adminIntegrityBroken', { n: lastVerifyResult.brokenAtSeq })}</p></div>`
+        ? `<div class="result-box result-valid">${icon('shield-check', { size: 26 })}<div><h4>${t('verifyResultValid')}</h4><p>${t('adminIntegrityValid', { n: lastVerifyResult.totalEntries })}</p></div></div>`
+        : `<div class="result-box result-tampered">${icon('shield-alert', { size: 26 })}<div><h4>${t('verifyResultTampered')}</h4><p>${t('adminIntegrityBroken', { n: lastVerifyResult.brokenAtSeq })}</p></div></div>`
     })
 
     root.querySelector('#audit-report-btn').addEventListener('click', async () => {
@@ -198,36 +211,38 @@ export function renderAdmin(main, navigate) {
     const coverage = aggregate.computeWorkerCoverage(trusted)
 
     const passRateRows = passRates
-      .map((r) => {
-        const mod = getModule(r.moduleId)
-        const label = mod ? pick(mod.title) : r.moduleId
-        return `<div class="kv-row"><span class="k">${label}</span><span class="v">${t('adminPassRateFormat', { passes: r.passes, attempts: r.attempts, rate: r.rate })}</span></div>`
-      })
+      .map((r) => `
+        <div class="kv-row" style="display:block;">
+          <div class="row-between"><span class="k">${moduleCell(r.moduleId)}</span><span class="v">${Number(r.rate)}%</span></div>
+          <div class="bar" role="img" aria-label="${t('adminPassRateFormat', { passes: r.passes, attempts: r.attempts, rate: r.rate })}"><span style="width:${Number(r.rate)}%"></span></div>
+          <div class="text-xs-dim mt-8">${r.passes}/${r.attempts}</div>
+        </div>`)
       .join('') || `<p class="hint">—</p>`
 
     const missedRows = missed
-      .map((m) => `<div class="kv-row"><span class="k">${t('adminMissedFormat', { count: m.count, question: pick(m.question) })}</span></div>`)
+      .map((m) => `<div class="kv-row"><span class="k">${icon('triangle-alert', { size: 18, cls: 'status-bad' })} ${pick(m.question)}</span><span class="v"><span class="badge badge-bad">${m.count}×</span></span></div>`)
       .join('') || `<p class="hint">—</p>`
 
+    const avgRate = passRates.length
+      ? Math.round(passRates.reduce((sum, r) => sum + Number(r.rate), 0) / passRates.length)
+      : 0
     const excludedCount = excluded.length + parseErrors
-    const excludedNote = excludedCount > 0
-      ? `<p class="hint" style="color:var(--bad);">${t('adminExcludedFilesNote', { n: excludedCount })}</p>`
-      : ''
 
     aggregateRoot.innerHTML = `
-      <div class="module-card">
-        <h3 class="card-h3">${t('adminCoverageHeading')}</h3>
-        <p>${t('adminCoverageFormat', { n: coverage.count })}</p>
+      <h3 class="section-title">${t('adminAggregateHeading')}</h3>
+      <div class="stat-grid">
+        <div class="stat">${icon('users', { size: 26 })}<div><strong>${coverage.count}</strong><span>${t('statWorkers')}</span></div></div>
+        <div class="stat is-good">${icon('percent', { size: 26 })}<div><strong>${avgRate}%</strong><span>${t('statPassRate')}</span></div></div>
       </div>
       <div class="module-card">
-        <h3 class="card-h3">${t('adminPassRateHeading')}</h3>
+        <h3>${icon('chart-column', { size: 20 })} ${t('adminPassRateHeading')}</h3>
         ${passRateRows}
       </div>
       <div class="module-card">
-        <h3 class="card-h3">${t('adminMostMissedHeading')}</h3>
+        <h3>${icon('triangle-alert', { size: 20 })} ${t('adminMostMissedHeading')}</h3>
         ${missedRows}
       </div>
-      ${excludedNote}
+      ${excludedCount > 0 ? `<div class="result-box result-tampered">${icon('shield-alert', { size: 22 })}<p>${t('adminExcludedFilesNote', { n: excludedCount })}</p></div>` : ''}
     `
   }
 }
