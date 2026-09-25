@@ -538,3 +538,21 @@ details.note p { margin: 8px 0 0; }
 .module-card .profile-head p { margin: 2px 0 0; }
 .field-hint .icon, .hint .icon, .subtitle-dim .icon, .page-head p .icon, .module-card p .icon { vertical-align: -3px; }
 a.btn { text-decoration: none; }
+
+/* Offline network button in the gov bar: Bluetooth icon + nearby count. */
+.gov-bar .mesh-btn { position: relative; }
+.mesh-count {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--saffron);
+  color: #1a1a1a;
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}

@@ -10,6 +10,7 @@ import { isMuted, toggleMuted } from '../shared/ui/sound.js'
 import { icon } from '../shared/ui/icon.js'
 import { EMERGENCY_RESPONSE_MODULE_ID } from '../content/modules.js'
 import { isLoggedIn, onSessionChange } from '../core/session.js'
+import { getMeshStatus, onMeshStatus } from '../features/mesh/meshService.js'
 import { navigate, render } from './router.js'
 
 // Text-size control: cycles base -> lg -> xl -> base, persisted the same
@@ -22,6 +23,7 @@ export function mountShell(app) {
     <div class="gov-bar">
       <span class="gov-name" id="gov-name"></span>
       <div class="gov-tools">
+        <button class="icon-btn mesh-btn" id="mesh-btn" hidden></button>
         <button class="icon-btn" id="text-size-btn">${icon('a-large-small', { size: 22 })}</button>
         <button class="icon-btn" id="sound-btn"></button>
         <button class="icon-btn lang-btn" id="lang-btn">${icon('languages', { size: 18 })}<span id="lang-label"></span></button>
@@ -65,6 +67,16 @@ export function mountShell(app) {
     label($('#sound-btn'), t('soundToggleBtn'))
   }
 
+  // Offline network indicator: Bluetooth icon + number of phones nearby.
+  const paintMesh = (s = getMeshStatus()) => {
+    const btn = $('#mesh-btn')
+    btn.hidden = !s.supported || !isLoggedIn()
+    if (btn.hidden) return
+    const peers = s.neighbours?.length || 0
+    btn.innerHTML = `${icon(s.running ? 'bluetooth' : 'bluetooth-off', { size: 20 })}${s.running ? `<span class="mesh-count">${peers}</span>` : ''}`
+    label(btn, `${t('meshTitle')}: ${s.running ? `${peers} ${t('meshNearby')}` : t('meshOff')}`)
+  }
+
   const paint = () => {
     document.documentElement.lang = getLang()
     $('#gov-name').textContent = t('govName')
@@ -78,6 +90,7 @@ export function mountShell(app) {
     label($('#profile-btn'), t('profileNavBtn'))
     $('#profile-btn').hidden = !isLoggedIn()
     paintSoundBtn()
+    paintMesh()
   }
 
   $('#lang-btn').addEventListener('click', () => {
@@ -87,6 +100,8 @@ export function mountShell(app) {
   })
   $('#verify-nav-btn').addEventListener('click', () => navigate('#/verify'))
   $('#profile-btn').addEventListener('click', () => navigate('#/profile'))
+  $('#mesh-btn').addEventListener('click', () => navigate('#/mesh'))
+  onMeshStatus(paintMesh)
   // Always reachable in one tap, from any screen — the whole point is not
   // making someone hunt through the home screen's module list mid-accident.
   $('#emergency-nav-btn').addEventListener('click', () => navigate(`#/module/${EMERGENCY_RESPONSE_MODULE_ID}`))

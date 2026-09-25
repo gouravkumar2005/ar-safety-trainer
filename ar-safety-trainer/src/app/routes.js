@@ -14,6 +14,7 @@ import { routes as certificates } from '../features/certificates/index.js'
 import { routes as admin } from '../features/admin/index.js'
 import { routes as grievance } from '../features/grievance/index.js'
 import { routes as account } from '../features/account/index.js'
+import { routes as mesh } from '../features/mesh/index.js'
 
 export const routes = [
   ...home,
@@ -25,6 +26,7 @@ export const routes = [
   ...admin,
   ...grievance,
   ...account,
+  ...mesh,
 ]
 
 // Shown for any hash that matches nothing.

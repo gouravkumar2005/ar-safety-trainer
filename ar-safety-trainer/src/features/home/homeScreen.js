@@ -94,6 +94,7 @@ export function renderHome(main, navigate) {
   const extra = [
     { label: t('verify'), icon: 'scan-qr-code', go: '#/verify', cls: 'is-green' },
     { label: t('grievanceNavLink'), icon: 'message-square-warning', go: '#/grievance', cls: 'is-saffron' },
+    { label: t('meshTitle'), icon: 'bluetooth', go: '#/mesh', cls: 'is-wide' },
   ]
   if (hasRole('supervisor', 'admin')) extra.push({ label: t('complianceDashboardBtn'), icon: 'chart-column', go: '#/admin', cls: 'is-wide' })
   extra.forEach((x) => {

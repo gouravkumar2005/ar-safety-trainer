@@ -18,8 +18,11 @@ import { startRouter } from './app/router.js'
 import { initNativeApp } from './platform/nativeApp.js'
 import { isLoggedIn } from './core/session.js'
 import { refreshProfile } from './features/account/accountApi.js'
+import { initMesh } from './features/mesh/meshService.js'
 
 const main = mountShell(document.querySelector('#app'))
 initNativeApp()
 startRouter(main)
 if (isLoggedIn()) refreshProfile()
+// Offline phone-to-phone network (Android app only; no-op on the website).
+initMesh()

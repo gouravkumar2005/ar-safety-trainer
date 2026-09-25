@@ -52,6 +52,10 @@ export function renderAdmin(main, navigate) {
         <span class="tile-icon">${icon('upload', { size: 28 })}</span>
         <span class="tile-label">${t('adminImportLabel')}</span>
       </label>
+      <button class="tile is-wide" id="mesh-live-btn">
+        <span class="tile-icon">${icon('bluetooth', { size: 26 })}</span>
+        <span class="tile-label">${t('meshLiveTile')}</span>
+      </button>
       <label class="tile is-green is-wide">
         <input type="file" id="aggregate-input" accept="application/json" multiple class="sr-only" />
         <span class="tile-icon">${icon('users', { size: 26 })}</span>
@@ -64,6 +68,7 @@ export function renderAdmin(main, navigate) {
   `
 
   main.querySelector('#back').addEventListener('click', () => navigate('#/'))
+  main.querySelector('#mesh-live-btn').addEventListener('click', () => navigate('#/mesh'))
   main.querySelector('#export-btn').addEventListener('click', doExport)
   main.querySelector('#import-input').addEventListener('change', (e) => {
     const file = e.target.files?.[0]

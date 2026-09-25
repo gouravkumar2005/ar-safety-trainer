@@ -9,7 +9,7 @@
 // or conveys status on its own.
 
 import {
-  ALargeSmall, ArrowLeft, Award, BadgeCheck, Bone, Box, ChartColumn, Check, ChevronLeft, ChevronRight,
+  ALargeSmall, ArrowLeft, ArrowRight, Award, Bluetooth, BluetoothConnected, BluetoothOff, Radio, Route, Share2, BadgeCheck, Bone, Box, ChartColumn, Check, ChevronLeft, ChevronRight,
   CircleAlert, CircleCheck, CirclePlay, CircleUser, CircleX, ClipboardCheck, Clock, Cog,
   Construction, Copy, Download, Droplet, ExternalLink, Eye, Factory, FileText, Flame,
   FlaskConical, Footprints, Forklift, Gamepad2, HandHeart, HardHat, HeartPulse, Hourglass,
@@ -21,7 +21,9 @@ import {
 } from 'lucide'
 
 const ICONS = {
-  'a-large-small': ALargeSmall, 'arrow-left': ArrowLeft, award: Award, 'badge-check': BadgeCheck,
+  'a-large-small': ALargeSmall, 'arrow-left': ArrowLeft, 'arrow-right': ArrowRight, award: Award,
+  bluetooth: Bluetooth, 'bluetooth-connected': BluetoothConnected, 'bluetooth-off': BluetoothOff,
+  radio: Radio, route: Route, 'share-2': Share2, 'badge-check': BadgeCheck,
   bone: Bone, box: Box, 'chart-column': ChartColumn, check: Check, 'chevron-left': ChevronLeft, 'chevron-right': ChevronRight,
   'circle-alert': CircleAlert, 'circle-check': CircleCheck, 'circle-play': CirclePlay,
   'circle-user': CircleUser, 'circle-x': CircleX, 'clipboard-check': ClipboardCheck, clock: Clock,

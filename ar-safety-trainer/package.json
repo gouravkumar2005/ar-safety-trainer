@@ -12,7 +12,8 @@
     "build:android": "vite build --mode android && cap sync android",
     "apk:debug": "npm run build:android && node scripts/gradle.mjs assembleDebug",
     "apk:release": "npm run build:android && node scripts/gradle.mjs assembleRelease",
-    "android:icons": "node scripts/generate-icons.mjs"
+    "android:icons": "node scripts/generate-icons.mjs",
+    "test": "node --test \"test/*.test.mjs\""
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

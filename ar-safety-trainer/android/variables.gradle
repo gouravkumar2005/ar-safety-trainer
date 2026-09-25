@@ -15,4 +15,6 @@ ext {
     cordovaAndroidVersion = '14.0.1'
     // Offline in-app AR (ARCore + Filament renderer)
     sceneViewVersion = '2.3.3'
+    // Offline phone-to-phone network (Google Nearby Connections)
+    nearbyVersion = '19.3.0'
 }

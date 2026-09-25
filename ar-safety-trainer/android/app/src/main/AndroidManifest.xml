@@ -38,6 +38,12 @@
         <!-- "optional": the app still installs on phones without AR support;
              only the AR screen needs ARCore (it offers to install it). -->
         <meta-data android:name="com.google.ar.core" android:value="optional" />
+
+        <!-- Keeps the offline phone-to-phone network running with the screen off (mesh/MeshService.kt). -->
+        <service
+            android:name=".mesh.MeshService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 
     <!-- Permissions -->
@@ -52,6 +58,23 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Haptic ticks on quiz answers and sim steps (navigator.vibrate). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Offline phone-to-phone network (Google Nearby Connections, mesh/MeshPlugin.kt).
+         Bluetooth + Wi-Fi Direct between nearby phones; no internet used. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 
     <!-- The camera is optional: without it the app falls back to text guides. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
