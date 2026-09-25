@@ -98,7 +98,7 @@ export function renderTour(main, navigate, params) {
         id="mv" src="${mod.model}" alt="${pick(mod.title)}" scale="${s} ${s} ${s}"
         camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
         auto-rotate auto-rotate-delay="1500"
-        ar ar-modes="webxr scene-viewer quick-look"
+        ar ar-modes="scene-viewer webxr quick-look"
       ></model-viewer>
     `
     mv = viewerRoot.querySelector('#mv')
@@ -133,7 +133,7 @@ export function renderTour(main, navigate, params) {
           src="${step.model}" alt="${pick(step.title)}" scale="${s} ${s} ${s}"
           camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
           auto-rotate auto-rotate-delay="1500"
-          ar ar-modes="webxr scene-viewer quick-look"
+          ar ar-modes="scene-viewer webxr quick-look"
         ></model-viewer>
       `
     } else if (mv) {
@@ -199,7 +199,7 @@ export function renderTour(main, navigate, params) {
       </div>
       ${itemMode ? `
         <div class="viewer-wrap mt-12">
-          <model-viewer src="${mod.model}" alt="${pick(mod.title)}" scale="${s} ${s} ${s}" camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look"></model-viewer>
+          <model-viewer src="${mod.model}" alt="${pick(mod.title)}" scale="${s} ${s} ${s}" camera-controls auto-rotate ar ar-modes="scene-viewer webxr quick-look"></model-viewer>
         </div>
       ` : ''}
       <div class="stack mt-16">

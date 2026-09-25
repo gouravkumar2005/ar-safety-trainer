@@ -8,9 +8,9 @@ export const en = {
   startTraining: 'Start Training',
   comingSoon: 'Coming soon',
   viewInAR: 'View in AR',
-  arHintScan: 'Move your phone slowly to find the floor or a table…',
-  arHintTap: 'Tap the floor or table to place the model.',
-  arHintPlaced: 'Pinch to resize, twist with two fingers to rotate. Tap another spot to move it.',
+  arHintScan: 'Move your phone slowly to find the floor',
+  arHintTap: 'Point at the floor. The model appears on the white circle.',
+  arHintPlaced: 'Drag to move · Pinch to resize · Twist to rotate',
   arStartFailed: 'Could not start AR. Allow camera access and make sure "Google Play Services for AR" is installed.',
   arCloseLabel: 'Close AR',
   arNeedsInternet: "This phone doesn't support offline AR, so it uses Google Scene Viewer, which needs an internet connection. Everything else in the app works offline.",
@@ -366,4 +366,5 @@ export const en = {
   meshInboxEmpty: 'Nothing received yet.',
   meshReceiving: 'Receiving…',
   meshLiveTile: 'Live offline network',
+  arResetLabel: 'Reset',
 }

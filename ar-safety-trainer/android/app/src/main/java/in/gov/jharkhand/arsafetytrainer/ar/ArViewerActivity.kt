@@ -1,40 +1,50 @@
 // `in` is a Kotlin keyword, so the package name needs backticks here.
 package `in`.gov.jharkhand.arsafetytrainer.ar
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.ar.core.Config
+import com.google.ar.core.HitResult
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
+import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
+import io.github.sceneview.node.CylinderNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node
 
 /**
- * Full-screen, fully OFFLINE augmented reality: places one training model
- * (a .glb bundled inside the APK) on the real floor or table in front of
- * the worker. Opened from the web app through [ArViewerPlugin].
+ * Full-screen, fully OFFLINE augmented reality in the style of Google's
+ * Scene Viewer: places one training model (a .glb bundled inside the APK)
+ * on the real floor in front of the worker. Opened from the web app through
+ * [ArViewerPlugin] when the phone has no internet (with internet, the app
+ * opens Google Scene Viewer itself — see src/platform/arLauncher.js).
  *
- * How it works for the user:
- *  1. Move the phone slowly until ARCore finds a flat surface.
- *  2. Tap the surface: the model appears there at its real-world size.
- *  3. Pinch to resize, twist with two fingers to rotate, tap elsewhere to move it.
+ * What the worker sees:
+ *  1. "Move your phone slowly": ARCore looks for the floor (faint dots).
+ *  2. An aiming disc appears on the floor at the centre of the screen and
+ *     the model pops in there by itself, at real-world size, with a shadow.
+ *  3. One finger drags it along the floor; pinch resizes; twist rotates.
+ *     The dots disappear once the model is placed. "Reset" puts it back.
  *
- * All on-screen text is passed in by the web app, so it stays in whichever
- * language (English/Hindi) the app is using.
+ * All on-screen text comes from the web app, so it is in the app's language.
  */
 class ArViewerActivity : AppCompatActivity() {
 
@@ -48,6 +58,7 @@ class ArViewerActivity : AppCompatActivity() {
         val hintPlaced: String,
         val errorText: String,
         val closeLabel: String,
+        val resetLabel: String = "Reset",
     ) {
         fun intent(context: Context): Intent = Intent(context, ArViewerActivity::class.java)
             .putExtra(EXTRA_MODEL, modelAsset)
@@ -58,14 +69,19 @@ class ArViewerActivity : AppCompatActivity() {
             .putExtra(EXTRA_HINT_PLACED, hintPlaced)
             .putExtra(EXTRA_ERROR, errorText)
             .putExtra(EXTRA_CLOSE, closeLabel)
+            .putExtra(EXTRA_RESET, resetLabel)
     }
 
     private lateinit var request: Request
     private lateinit var sceneView: ARSceneView
     private lateinit var hintView: TextView
+    private lateinit var resetButton: TextView
 
     private var modelNode: ModelNode? = null
-    private var placedAnchor: AnchorNode? = null
+    private var anchorNode: AnchorNode? = null
+    private var reticle: Node? = null
+    private var baseScale = 1f
+    private var modelFailed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,36 +89,26 @@ class ArViewerActivity : AppCompatActivity() {
 
         sceneView = ARSceneView(
             context = this,
-            sessionConfiguration = { session, config ->
+            sessionConfiguration = { _, config ->
                 config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL
                 config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-                // Depth lets real objects hide the model where supported.
-                if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                    config.depthMode = Config.DepthMode.AUTOMATIC
-                }
+                config.focusMode = Config.FocusMode.AUTO
+                // No depth occlusion: it cut parts of the model away and made it flicker.
+                config.depthMode = Config.DepthMode.DISABLED
             },
-            onSessionUpdated = { session, _ ->
-                val surfaceFound = session.getAllTrackables(Plane::class.java).any {
-                    it.trackingState == TrackingState.TRACKING &&
-                        it.type == Plane.Type.HORIZONTAL_UPWARD_FACING
-                }
-                showHint(
-                    when {
-                        placedAnchor != null -> request.hintPlaced
-                        surfaceFound -> request.hintTap
-                        else -> request.hintScan
-                    }
-                )
-            },
+            onSessionUpdated = { session, _ -> onFrame(session.getAllTrackables(Plane::class.java)) },
             // ARCore missing/unsupported, camera denied, etc.
             onSessionFailed = { failAndClose() },
         ).apply {
+            // Faint dots while searching; they also catch the model's shadow.
             planeRenderer.isEnabled = true
-            // Taps on empty space place (or move) the model; taps on the
-            // model itself are left to its own rotate/scale gestures.
-            setOnGestureListener(onSingleTapConfirmed = { e, node ->
-                if (node == null) placeModelAt(e.x, e.y)
-            })
+            planeRenderer.isShadowReceiver = true
+            setOnGestureListener(
+                // A tap on the floor moves the model there.
+                onSingleTapConfirmed = { e, node -> if (node == null) moveModelTo(hitAt(e.x, e.y)) },
+                // One finger drags it along the floor (two fingers = rotate / resize).
+                onScroll = { _, e2, _, _ -> if (e2.pointerCount == 1) moveModelTo(hitAt(e2.x, e2.y)) },
+            )
         }
 
         setContentView(buildLayout())
@@ -117,25 +123,86 @@ class ArViewerActivity : AppCompatActivity() {
         hintPlaced = intent.getStringExtra(EXTRA_HINT_PLACED).orEmpty(),
         errorText = intent.getStringExtra(EXTRA_ERROR).orEmpty(),
         closeLabel = intent.getStringExtra(EXTRA_CLOSE).orEmpty(),
+        resetLabel = intent.getStringExtra(EXTRA_RESET) ?: "Reset",
     )
 
-    private fun placeModelAt(x: Float, y: Float) {
-        val hit = sceneView.hitTestAR(
-            xPx = x,
-            yPx = y,
-            planeTypes = setOf(Plane.Type.HORIZONTAL_UPWARD_FACING),
-        ) ?: return
-        val model = modelNode ?: loadModel() ?: return
-        val anchorNode = AnchorNode(sceneView.engine, hit.createAnchor())
+    // ---- every camera frame ---------------------------------------------------
 
-        // Moving the model: re-parent it onto the new anchor and release the old one.
-        placedAnchor?.let { old ->
-            sceneView.removeChildNode(old)
-            old.anchor.detach()
+    private fun onFrame(planes: Collection<Plane>) {
+        val floorFound = planes.any {
+            it.trackingState == TrackingState.TRACKING && it.type == Plane.Type.HORIZONTAL_UPWARD_FACING
         }
-        anchorNode.addChildNode(model)
-        sceneView.addChildNode(anchorNode)
-        placedAnchor = anchorNode
+        val centreHit = if (floorFound) hitAt(sceneView.width / 2f, sceneView.height / 2f) else null
+
+        // Aiming disc on the floor at the screen centre, until the model is placed.
+        val disc = reticle ?: createReticle()
+        if (anchorNode == null && centreHit != null) {
+            disc.isVisible = true
+            disc.worldPosition = poseToFloat3(centreHit)
+        } else {
+            disc.isVisible = false
+        }
+
+        // Scene Viewer style: the model appears by itself as soon as there's a floor.
+        if (anchorNode == null && centreHit != null && !modelFailed) placeModel(centreHit)
+
+        showHint(
+            when {
+                anchorNode != null -> request.hintPlaced
+                floorFound -> request.hintTap
+                else -> request.hintScan
+            }
+        )
+    }
+
+    private fun hitAt(x: Float, y: Float): HitResult? = sceneView.hitTestAR(
+        xPx = x,
+        yPx = y,
+        planeTypes = setOf(Plane.Type.HORIZONTAL_UPWARD_FACING),
+    )
+
+    private fun poseToFloat3(hit: HitResult) =
+        hit.hitPose.let { Float3(it.tx(), it.ty(), it.tz()) }
+
+    // ---- placing / moving the model --------------------------------------------
+
+    private fun placeModel(hit: HitResult) {
+        val model = modelNode ?: loadModel() ?: return
+        val anchor = AnchorNode(sceneView.engine, hit.createAnchor())
+        anchor.addChildNode(model)
+        sceneView.addChildNode(anchor)
+        anchorNode = anchor
+        // Hide the dots once placed; the floor still shows the model's shadow.
+        sceneView.planeRenderer.isVisible = false
+        resetButton.visibility = View.VISIBLE
+        popIn(model)
+    }
+
+    private fun moveModelTo(hit: HitResult?) {
+        if (hit == null) return
+        if (anchorNode == null) {
+            placeModel(hit)
+            return
+        }
+        modelNode?.worldPosition = poseToFloat3(hit)
+    }
+
+    private fun resetModel() {
+        val model = modelNode ?: return
+        model.rotation = Float3(0f, 0f, 0f)
+        model.scale = Float3(baseScale)
+        hitAt(sceneView.width / 2f, sceneView.height / 2f)?.let { model.worldPosition = poseToFloat3(it) }
+        popIn(model)
+    }
+
+    // Small "pop" when the model appears, like Scene Viewer.
+    private fun popIn(model: ModelNode) {
+        ValueAnimator.ofFloat(0.6f, 1f).apply {
+            duration = 280
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { model.scale = Float3(baseScale * (it.animatedValue as Float)) }
+            start()
+        }
     }
 
     // The models are exported normalised to a 1 m box, so scaling to
@@ -145,16 +212,33 @@ class ArViewerActivity : AppCompatActivity() {
         ModelNode(
             modelInstance = instance,
             scaleToUnits = request.sizeMetres,
-            centerOrigin = Position(x = 0f, y = -1f, z = 0f), // bottom of the model sits on the surface
+            centerOrigin = Position(x = 0f, y = -1f, z = 0f), // bottom of the model sits on the floor
         ).apply {
-            isEditable = true           // pinch to scale, twist to rotate
-            isPositionEditable = false  // moving is done by tapping a new spot
-            val base = scale.x
-            editableScaleRange = (base * 0.25f)..(base * 4f)
+            isShadowCaster = true
+            isEditable = true           // pinch to resize, twist to rotate
+            isPositionEditable = false  // moving is our own one-finger drag
+            baseScale = scale.x
+            editableScaleRange = (baseScale * 0.25f)..(baseScale * 4f)
         }
     }.onSuccess { modelNode = it }
-        .onFailure { failAndClose() }
+        .onFailure {
+            modelFailed = true
+            failAndClose()
+        }
         .getOrNull()
+
+    // White disc with a navy centre dot: where the model will land.
+    private fun createReticle(): Node {
+        val white = sceneView.materialLoader.createColorInstance(Color.WHITE, 0f, 1f, 0f)
+        val navy = sceneView.materialLoader.createColorInstance(NAVY, 0f, 1f, 0f)
+        val disc = CylinderNode(sceneView.engine, 0.09f, 0.002f, Float3(0f), 48, listOf(white))
+        val dot = CylinderNode(sceneView.engine, 0.018f, 0.003f, Float3(0f, 0.001f, 0f), 24, listOf(navy))
+        disc.addChildNode(dot)
+        disc.isVisible = false
+        sceneView.addChildNode(disc)
+        reticle = disc
+        return disc
+    }
 
     private fun showHint(text: String) {
         if (hintView.text != text) hintView.text = text
@@ -167,59 +251,68 @@ class ArViewerActivity : AppCompatActivity() {
         }
     }
 
-    // --- Layout: camera view + a title/hint card on top + a close button ---
+    // --- Layout: camera + title pill, close, hint pill, reset (app's light style) ---
 
     private fun buildLayout(): FrameLayout {
         val root = FrameLayout(this)
         root.addView(sceneView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(14).toFloat()
-                setColor(Color.argb(200, 11, 15, 23)) // app background, translucent
-            }
-        }
-        card.addView(TextView(this).apply {
-            text = request.title
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        })
-        hintView = TextView(this).apply {
-            text = request.hintScan
-            setTextColor(Color.rgb(0xEE, 0xF2, 0xF7))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            setPadding(0, dp(4), 0, 0)
-        }
-        card.addView(hintView)
-        root.addView(card, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.TOP).apply {
-            setMargins(dp(12), dp(40), dp(72), 0)
+        val title = pill(request.title, bold = true, sizeSp = 16f)
+        root.addView(title, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply {
+            setMargins(dp(72), dp(40), dp(72), 0)
         })
 
-        val close = TextView(this).apply {
-            text = "✕"
-            contentDescription = request.closeLabel
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.argb(200, 11, 15, 23))
-            }
-            setOnClickListener { finish() }
-        }
-        root.addView(close, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.END).apply {
-            setMargins(0, dp(40), dp(12), 0)
+        val close = roundButton("✕", request.closeLabel) { finish() }
+        root.addView(close, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.START).apply {
+            setMargins(dp(12), dp(36), 0, 0)
+        })
+
+        hintView = pill(request.hintScan, bold = false, sizeSp = 15f)
+        root.addView(hintView, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            setMargins(dp(20), 0, dp(20), dp(40))
+        })
+
+        resetButton = roundButton("↺", request.resetLabel) { resetModel() }.apply { visibility = View.GONE }
+        root.addView(resetButton, FrameLayout.LayoutParams(dp(52), dp(52), Gravity.BOTTOM or Gravity.END).apply {
+            setMargins(0, 0, dp(16), dp(104))
         })
         return root
+    }
+
+    private fun pill(text: String, bold: Boolean, sizeSp: Float) = TextView(this).apply {
+        this.text = text
+        gravity = Gravity.CENTER
+        setTextColor(NAVY)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
+        if (bold) setTypeface(typeface, Typeface.BOLD)
+        setPadding(dp(18), dp(10), dp(18), dp(10))
+        elevation = dp(4).toFloat()
+        background = GradientDrawable().apply {
+            cornerRadius = dp(24).toFloat()
+            setColor(Color.argb(240, 255, 255, 255))
+        }
+    }
+
+    private fun roundButton(symbol: String, label: String, onClick: () -> Unit) = TextView(this).apply {
+        text = symbol
+        contentDescription = label
+        gravity = Gravity.CENTER
+        setTextColor(NAVY)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+        setTypeface(typeface, Typeface.BOLD)
+        elevation = dp(4).toFloat()
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.WHITE)
+        }
+        setOnClickListener { onClick() }
     }
 
     private fun dp(value: Int) =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
 
     private companion object {
+        val NAVY = Color.rgb(0x0B, 0x3D, 0x91)
         const val EXTRA_MODEL = "modelAsset"
         const val EXTRA_TITLE = "title"
         const val EXTRA_SIZE = "sizeMetres"
@@ -228,5 +321,6 @@ class ArViewerActivity : AppCompatActivity() {
         const val EXTRA_HINT_PLACED = "hintPlaced"
         const val EXTRA_ERROR = "errorText"
         const val EXTRA_CLOSE = "closeLabel"
+        const val EXTRA_RESET = "resetLabel"
     }
 }

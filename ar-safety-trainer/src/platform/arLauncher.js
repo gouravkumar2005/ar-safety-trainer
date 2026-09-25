@@ -40,6 +40,19 @@ function onClick(event) {
 async function openAr(viewer) {
   const src = viewer.getAttribute('src') // e.g. "/models/ppe-helmet.glb"
   const title = viewer.getAttribute('alt') || ''
+
+  // Online: Google's own AR viewer (Scene Viewer) — the smoothest AR on
+  // Android. It loads the hosted copy of the model, so it needs internet.
+  if (navigator.onLine) {
+    try {
+      await ArViewer.openSceneViewer({ file: sceneViewerFileUrl(src), title })
+      return
+    } catch {
+      // Scene Viewer not on this phone: use the app's own AR below.
+    }
+  }
+
+  // Offline (e.g. underground): the app's own AR screen, model bundled in the APK.
   try {
     await ArViewer.open({
       // Capacitor packs the web build into the APK's assets/public/ folder.
@@ -51,11 +64,44 @@ async function openAr(viewer) {
       hintPlaced: t('arHintPlaced'),
       errorText: t('arStartFailed'),
       closeLabel: t('arCloseLabel'),
+      resetLabel: t('arResetLabel'),
     })
   } catch (err) {
     if (err?.code === 'unsupported') await openSceneViewerFallback(src, title)
     else alert(t('arStartFailed'))
   }
+}
+
+// Google Scene Viewer can't scale a model, so it gets the real-size copy
+// made at build time (scripts/real-scale-models.mjs), from the hosted site.
+function sceneViewerFileUrl(src) {
+  const file = src.split('/').pop()
+  return new URL(`/models/ar/${file}`, PUBLIC_SITE_URL).toString()
+}
+
+// Website on Android Chrome: open Google Scene Viewer ourselves (with the
+// real-size model) instead of model-viewer's default, which would show the
+// 1 m normalised file and also rewrites the URL hash our router uses.
+export function interceptWebArButtons() {
+  if (!/Android/i.test(navigator.userAgent)) return
+  document.addEventListener(
+    'click',
+    (event) => {
+      const path = event.composedPath()
+      const viewer = path.find((el) => el.tagName === 'MODEL-VIEWER')
+      const tappedArButton = path.some((el) => el.slot === 'ar-button')
+      if (!viewer || !tappedArButton) return
+      event.preventDefault()
+      event.stopPropagation()
+      const file = encodeURIComponent(sceneViewerFileUrl(viewer.getAttribute('src')))
+      const title = encodeURIComponent(viewer.getAttribute('alt') || '')
+      const back = encodeURIComponent(window.location.href)
+      window.location.href =
+        `intent://arvr.google.com/scene-viewer/1.0?file=${file}&mode=ar_preferred&title=${title}` +
+        `#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${back};end;`
+    },
+    true
+  )
 }
 
 // <model-viewer scale="0.28 0.28 0.28"> -> 0.28. The .glb files are all
@@ -71,7 +117,7 @@ async function openSceneViewerFallback(src, title) {
     return
   }
   try {
-    await ArViewer.openSceneViewer({ file: new URL(src, PUBLIC_SITE_URL).toString(), title })
+    await ArViewer.openSceneViewer({ file: sceneViewerFileUrl(src), title })
   } catch {
     alert(t('arUnavailable'))
   }

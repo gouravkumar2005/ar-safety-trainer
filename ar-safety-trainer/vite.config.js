@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
+import { realScaleModels } from './scripts/real-scale-models.mjs'
 
 // SIH26041 — AR Safety Trainer. One codebase, two build targets:
 //
@@ -77,6 +78,7 @@ export default defineConfig(({ mode }) => {
     preview: {
       proxy: API_PROXY,
     },
-    plugins: isAndroid ? [] : [basicSsl(), pwaPlugin()],
+    // Web only: real-size model copies for Google Scene Viewer (scripts/real-scale-models.mjs).
+    plugins: isAndroid ? [] : [basicSsl(), pwaPlugin(), realScaleModels()],
   }
 })

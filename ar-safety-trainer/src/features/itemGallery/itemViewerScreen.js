@@ -50,7 +50,7 @@ export function renderItemViewer(main, navigate, params) {
         auto-rotate-delay="1500"
         interaction-prompt="when-focused"
         ar
-        ar-modes="webxr scene-viewer quick-look"
+        ar-modes="scene-viewer webxr quick-look"
       >
         <button slot="ar-button" class="btn btn-accent ar-btn">${icon('scan', { size: 20 })} ${t('viewInAR')}</button>
       </model-viewer>

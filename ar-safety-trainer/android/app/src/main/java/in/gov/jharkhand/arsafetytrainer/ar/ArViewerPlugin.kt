@@ -45,6 +45,7 @@ class ArViewerPlugin : Plugin() {
             hintPlaced = call.getString("hintPlaced", "")!!,
             errorText = call.getString("errorText", "")!!,
             closeLabel = call.getString("closeLabel", "")!!,
+            resetLabel = call.getString("resetLabel", "Reset")!!,
         )
         activity.startActivity(request.intent(context))
         call.resolve()

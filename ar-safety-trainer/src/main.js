@@ -19,6 +19,8 @@ import { initNativeApp } from './platform/nativeApp.js'
 import { isLoggedIn } from './core/session.js'
 import { refreshProfile } from './features/account/accountApi.js'
 import { initMesh } from './features/mesh/meshService.js'
+import { isNativeApp } from './platform/index.js'
+import { interceptWebArButtons } from './platform/arLauncher.js'
 
 const main = mountShell(document.querySelector('#app'))
 initNativeApp()
@@ -26,3 +28,5 @@ startRouter(main)
 if (isLoggedIn()) refreshProfile()
 // Offline phone-to-phone network (Android app only; no-op on the website).
 initMesh()
+// Website on Android: "View in AR" opens Google Scene Viewer at real size.
+if (!isNativeApp()) interceptWebArButtons()
